@@ -141,14 +141,14 @@ import {
 
 // -- Studio server language (read per request from the project config's `language`) --
 
-type StudioLanguage = "zh" | "en";
+type StudioLanguage = "zh" | "en" | "vi";
 
 function normalizeStudioLanguage(value: unknown): StudioLanguage {
-  return value === "en" ? "en" : "zh";
+  return value === "vi" ? "vi" : value === "en" ? "en" : "zh";
 }
 
 function pick(lang: StudioLanguage, zh: string, en: string): string {
-  return lang === "en" ? en : zh;
+  return lang === "zh" ? zh : en;
 }
 
 // -- Pipeline stage definitions per agent type --
@@ -4121,14 +4121,18 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         id: `custom:${s.name ?? "Custom"}`,
         baseUrl: s.baseUrl ?? "",
         label: s.name ?? "Custom",
+        apiKey: secrets.services[`custom:${s.name ?? "Custom"}`]?.apiKey ?? "",
       }))
-      .filter((s) => s.baseUrl && Boolean(secrets.services[s.id]?.apiKey));
+      .filter((s) => s.baseUrl && (
+        s.apiKey ||
+        isApiKeyOptionalForEndpoint({ provider: "openai", baseUrl: s.baseUrl })
+      ));
 
     const groups = await Promise.all(customs.map(async (s) => ({
       service: s.id,
       label: s.label,
       models: filterTextChatModels(
-        await probeModelsFromUpstream(s.baseUrl, secrets.services[s.id].apiKey, 10_000),
+        await probeModelsFromUpstream(s.baseUrl, s.apiKey, 10_000),
       ),
     })));
 
@@ -4334,7 +4338,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       if (updates.stream !== undefined) {
         existing.llm.stream = updates.stream;
       }
-      if (updates.language === "zh" || updates.language === "en") {
+      if (updates.language === "zh" || updates.language === "en" || updates.language === "vi") {
         existing.language = updates.language;
       }
       const { writeFile: writeFileFs } = await import("node:fs/promises");
@@ -5551,7 +5555,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
   // --- Language setup ---
 
   app.post("/api/v1/project/language", async (c) => {
-    const { language } = await c.req.json<{ language: "zh" | "en" }>();
+    const { language } = await c.req.json<{ language: "zh" | "en" | "vi" }>();
     const configPath = join(root, "inkos.json");
     try {
       const raw = await readFile(configPath, "utf-8");

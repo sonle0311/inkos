@@ -192,7 +192,7 @@ function preferRicherText(primary: string, fallback: string): string {
 
 function applyCurrentStatePatch(
   currentState: CurrentStateState,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
   delta: RuntimeStateDelta,
 ): CurrentStateState {
   if (!delta.currentStatePatch) {
@@ -203,23 +203,21 @@ function applyCurrentStatePatch(
   }
 
   const nextFacts = [...currentState.facts];
-  const labels = language === "en"
-    ? {
-      currentLocation: ["Current Location", "当前位置"],
-      protagonistState: ["Protagonist State", "主角状态"],
-      currentGoal: ["Current Goal", "当前目标"],
-      currentConstraint: ["Current Constraint", "当前限制"],
-      currentAlliances: ["Current Alliances", "Current Relationships", "当前敌我"],
-      currentConflict: ["Current Conflict", "当前冲突"],
-    }
-    : {
-      currentLocation: ["当前位置", "Current Location"],
-      protagonistState: ["主角状态", "Protagonist State"],
-      currentGoal: ["当前目标", "Current Goal"],
-      currentConstraint: ["当前限制", "Current Constraint"],
-      currentAlliances: ["当前敌我", "Current Alliances", "Current Relationships"],
-      currentConflict: ["当前冲突", "Current Conflict"],
-    };
+  const labels = language === "zh" ? {
+    currentLocation: ["当前位置", "Current Location"],
+    protagonistState: ["主角状态", "Protagonist State"],
+    currentGoal: ["当前目标", "Current Goal"],
+    currentConstraint: ["当前限制", "Current Constraint"],
+    currentAlliances: ["当前敌我", "Current Alliances", "Current Relationships"],
+    currentConflict: ["当前冲突", "Current Conflict"],
+  } : {
+    currentLocation: ["Current Location", "当前位置"],
+    protagonistState: ["Protagonist State", "主角状态"],
+    currentGoal: ["Current Goal", "当前目标"],
+    currentConstraint: ["Current Constraint", "当前限制"],
+    currentAlliances: ["Current Alliances", "Current Relationships", "当前敌我"],
+    currentConflict: ["Current Conflict", "当前冲突"],
+  };
 
   for (const [patchKey, aliases] of Object.entries(labels) as Array<[
     keyof typeof labels,

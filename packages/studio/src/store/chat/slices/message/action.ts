@@ -68,7 +68,7 @@ function formatAttachmentSize(size: number): string {
 
 function formatUserMessageForDisplay(text: string, attachments: ReadonlyArray<ChatAttachmentPayload>): string {
   if (attachments.length === 0) return text;
-  const heading = tr("附件：", "Attachments:");
+  const heading = tr("附件：", "Attachments:", "Tệp đính kèm:");
   const lines = text ? [text, "", heading] : [heading];
   for (const attachment of attachments) {
     lines.push(`- ${attachment.filename} (${attachment.mediaType || "application/octet-stream"}, ${formatAttachmentSize(attachment.size)})`);
@@ -345,7 +345,7 @@ export const createMessageSlice: StateCreator<ChatStore, [], [], MessageActions>
     if (scope === "all") {
       session?.stream?.close();
       const stoppedAt = Date.now();
-      const stoppedMessage = tr("已由用户停止", "Stopped by user");
+      const stoppedMessage = tr("已由用户停止", "Stopped by user", "Đã bị người dùng dừng");
       set((state) => ({
         sessions: updateSession(state.sessions, sessionId, (runtime) => ({
           isStreaming: false,
@@ -465,7 +465,7 @@ export const createMessageSlice: StateCreator<ChatStore, [], [], MessageActions>
     // 只挡"聊天轮流式中"：后台生产任务运行期间（isStreaming=true 但
     // isChatStreaming=false）允许继续发消息，聊天与任务并行。
     if ((!trimmed && attachments.length === 0) || !session || session.isChatStreaming) return;
-    const userInstruction = trimmed || tr("请阅读我上传的文件。", "Please read the files I uploaded.");
+    const userInstruction = trimmed || tr("请阅读我上传的文件。", "Please read the files I uploaded.", "Hãy đọc các tệp tôi đã tải lên.");
     const activeBookId = options?.activeBookId ?? session.bookId ?? undefined;
     const sessionKind: ChatSessionKind = options?.sessionKind
       ?? session.sessionKind
@@ -488,7 +488,7 @@ export const createMessageSlice: StateCreator<ChatStore, [], [], MessageActions>
 
     if (!get().selectedModel) {
       get().addUserMessage(sessionId, formatUserMessageForDisplay(userInstruction, attachments));
-      get().addErrorMessage(sessionId, tr("请先选择一个模型", "Select a model first"));
+      get().addErrorMessage(sessionId, tr("请先选择一个模型", "Select a model first", "Hãy chọn mô hình trước"));
       rememberFailedSend();
       return;
     }
@@ -672,6 +672,7 @@ export const createMessageSlice: StateCreator<ChatStore, [], [], MessageActions>
           const emptyMessage = tr(
             "模型未返回文本内容。请检查协议类型（chat/responses）、流式开关或上游服务兼容性。",
             "The model returned no text. Check the protocol type (chat/responses), the streaming toggle, or upstream service compatibility.",
+            "Mô hình không trả về nội dung văn bản. Hãy kiểm tra loại giao thức (chat/responses), công tắc streaming hoặc khả năng tương thích của dịch vụ upstream.",
           );
           get().addErrorMessage(sessionId, emptyMessage);
           // 空响应同样算这轮失败；用户主动停止的轮 isChatStreaming 已是 false，不记录。

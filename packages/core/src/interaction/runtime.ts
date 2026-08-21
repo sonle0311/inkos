@@ -13,7 +13,7 @@ import {
 } from "./session.js";
 
 type ReviseMode = "local-fix" | "rewrite";
-type RuntimeLanguage = "zh" | "en";
+type RuntimeLanguage = "zh" | "en" | "vi";
 
 export interface InteractionRuntimeTools {
   readonly listBooks: () => Promise<ReadonlyArray<string>>;
@@ -21,7 +21,7 @@ export interface InteractionRuntimeTools {
     readonly title: string;
     readonly genre?: string;
     readonly platform?: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
     readonly chapterWordCount?: number;
     readonly targetChapters?: number;
     readonly blurb?: string;
@@ -110,11 +110,11 @@ function extractToolMetadata(value: unknown): InteractionToolMetadata {
 }
 
 function resolveRuntimeLanguage(request: InteractionRequest): RuntimeLanguage {
-  return request.language === "en" ? "en" : "zh";
+  return request.language === "en" || request.language === "vi" ? request.language : "zh";
 }
 
 function localize<T>(language: RuntimeLanguage, messages: { zh: T; en: T }): T {
-  return language === "en" ? messages.en : messages.zh;
+  return language === "zh" ? messages.zh : messages.en;
 }
 
 function localizeMode(mode: AutomationMode, language: RuntimeLanguage): string {
@@ -133,31 +133,29 @@ function renderCreationDraft(
   draft: NonNullable<InteractionSession["creationDraft"]>,
   language: RuntimeLanguage,
 ): string {
-  const lines = language === "en"
-    ? [
-        "# Current Book Draft",
-        draft.title ? `- Title: ${draft.title}` : undefined,
-        draft.genre ? `- Genre: ${draft.genre}` : undefined,
-        draft.platform ? `- Platform: ${draft.platform}` : undefined,
-        draft.worldPremise ? `- World: ${draft.worldPremise}` : undefined,
-        draft.protagonist ? `- Protagonist: ${draft.protagonist}` : undefined,
-        draft.conflictCore ? `- Core Conflict: ${draft.conflictCore}` : undefined,
-        draft.volumeOutline ? `- Volume Direction: ${draft.volumeOutline}` : undefined,
-        draft.blurb ? `- Blurb: ${draft.blurb}` : undefined,
-        draft.nextQuestion ? `- Next: ${draft.nextQuestion}` : undefined,
-      ]
-    : [
-        "# 当前创作草案",
-        draft.title ? `- 书名：${draft.title}` : undefined,
-        draft.genre ? `- 题材：${draft.genre}` : undefined,
-        draft.platform ? `- 平台：${draft.platform}` : undefined,
-        draft.worldPremise ? `- 世界观：${draft.worldPremise}` : undefined,
-        draft.protagonist ? `- 主角：${draft.protagonist}` : undefined,
-        draft.conflictCore ? `- 核心冲突：${draft.conflictCore}` : undefined,
-        draft.volumeOutline ? `- 卷纲方向：${draft.volumeOutline}` : undefined,
-        draft.blurb ? `- 简介：${draft.blurb}` : undefined,
-        draft.nextQuestion ? `- 下一步：${draft.nextQuestion}` : undefined,
-      ];
+  const lines = language === "zh" ? [
+      "# 当前创作草案",
+      draft.title ? `- 书名：${draft.title}` : undefined,
+      draft.genre ? `- 题材：${draft.genre}` : undefined,
+      draft.platform ? `- 平台：${draft.platform}` : undefined,
+      draft.worldPremise ? `- 世界观：${draft.worldPremise}` : undefined,
+      draft.protagonist ? `- 主角：${draft.protagonist}` : undefined,
+      draft.conflictCore ? `- 核心冲突：${draft.conflictCore}` : undefined,
+      draft.volumeOutline ? `- 卷纲方向：${draft.volumeOutline}` : undefined,
+      draft.blurb ? `- 简介：${draft.blurb}` : undefined,
+      draft.nextQuestion ? `- 下一步：${draft.nextQuestion}` : undefined,
+    ] : [
+      "# Current Book Draft",
+      draft.title ? `- Title: ${draft.title}` : undefined,
+      draft.genre ? `- Genre: ${draft.genre}` : undefined,
+      draft.platform ? `- Platform: ${draft.platform}` : undefined,
+      draft.worldPremise ? `- World: ${draft.worldPremise}` : undefined,
+      draft.protagonist ? `- Protagonist: ${draft.protagonist}` : undefined,
+      draft.conflictCore ? `- Core Conflict: ${draft.conflictCore}` : undefined,
+      draft.volumeOutline ? `- Volume Direction: ${draft.volumeOutline}` : undefined,
+      draft.blurb ? `- Blurb: ${draft.blurb}` : undefined,
+      draft.nextQuestion ? `- Next: ${draft.nextQuestion}` : undefined,
+    ];
   return lines.filter(Boolean).join("\n");
 }
 

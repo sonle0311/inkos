@@ -188,7 +188,7 @@ export class PlannerAgent extends BaseAgent {
     readonly brief?: string;
     readonly chapterContext?: string;
     readonly recyclableHooks?: ReadonlyArray<StoredHook>;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   }): Promise<ChapterMemo> {
     const [characterMatrix, subplotBoard, emotionalArcs, pendingHooks, bookRulesRaw] = await Promise.all([
       readCharacterMatrix(input.storyDir),
@@ -199,18 +199,10 @@ export class PlannerAgent extends BaseAgent {
     ]);
 
     const language = input.language ?? "zh";
-    const noPriorChapter = language === "en"
-      ? "(this is the opening chapter — no prior chapter)"
-      : "（本章为起始章，无前章）";
-    const noBookRules = language === "en"
-      ? "(no book_rules entries)"
-      : "（暂无 book_rules 条目）";
-    const retryFeedbackHeader = language === "en"
-      ? "## Error from previous output"
-      : "## 上次输出的错误";
-    const retryFeedbackTrailer = language === "en"
-      ? "Fix and re-emit."
-      : "请修正后重新输出。";
+    const noPriorChapter = language === "zh" ? "（本章为起始章，无前章）" : "(this is the opening chapter — no prior chapter)";
+    const noBookRules = language === "zh" ? "（暂无 book_rules 条目）" : "(no book_rules entries)";
+    const retryFeedbackHeader = language === "zh" ? "## 上次输出的错误" : "## Error from previous output";
+    const retryFeedbackTrailer = language === "zh" ? "请修正后重新输出。" : "Fix and re-emit.";
 
     const userMessage = buildPlannerUserMessage({
       chapterNumber: input.chapterNumber,
@@ -281,46 +273,44 @@ export class PlannerAgent extends BaseAgent {
     readonly isGoldenOpening: boolean;
     readonly fallbackGoal: string;
     readonly errorMessage: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "en" | "vi";
   }): string {
-    if (input.language === "en") {
-      return [
-        `# Chapter ${input.chapterNumber} memo`,
-        "",
-        "## Chapter goal",
-        input.fallbackGoal || `Continue chapter ${input.chapterNumber} according to the current outline`,
-        "",
-        "## Thread refs",
-        "none",
-        "",
-        "## Current task",
-        `Use the current chapter goal and authoritative book context to continue chapter ${input.chapterNumber} without inventing a new direction.`,
-        "",
-        "## What the reader is waiting for right now",
-        "Keep the reader's active expectation from the outline and previous chapter in focus; do not replace it with a generic scene.",
-        "",
-        "## To pay off / to keep buried",
-        "Pay off only the near-term promises already supported by context; keep larger secrets buried unless the outline explicitly asks for them.",
-        "",
-        "## What the slow / transitional beats carry",
-        "If a slower beat is needed, make it carry pressure, evidence, relationship movement, or a concrete setup for the next action.",
-        "",
-        "## Three-question check on the key choice",
-        "The protagonist's main choice must have a reason, match current interest, and stay consistent with the established persona.",
-        "",
-        "## Required end-of-chapter change",
-        "End with a concrete change in information, pressure, relationship, objective, or risk so the chapter is not only summary.",
-        "",
-        "## Hook ledger for this chapter",
-        "advance: keep the active promise moving; resolve: only settle what has evidence; defer: preserve larger threads for later chapters.",
-        "",
-        "## Do not",
-        "Do not contradict established facts, ignore the user's current instruction, or turn the fallback memo into a new outline.",
-        "",
-        "## Planner warning",
-        `The model failed to produce a valid chapter memo after ${MEMO_RETRY_LIMIT} attempts. Last parser error: ${input.errorMessage}`,
-      ].join("\n");
-    }
+    if (input.language !== "zh") { return [
+      `# Chapter ${input.chapterNumber} memo`,
+      "",
+      "## Chapter goal",
+      input.fallbackGoal || `Continue chapter ${input.chapterNumber} according to the current outline`,
+      "",
+      "## Thread refs",
+      "none",
+      "",
+      "## Current task",
+      `Use the current chapter goal and authoritative book context to continue chapter ${input.chapterNumber} without inventing a new direction.`,
+      "",
+      "## What the reader is waiting for right now",
+      "Keep the reader's active expectation from the outline and previous chapter in focus; do not replace it with a generic scene.",
+      "",
+      "## To pay off / to keep buried",
+      "Pay off only the near-term promises already supported by context; keep larger secrets buried unless the outline explicitly asks for them.",
+      "",
+      "## What the slow / transitional beats carry",
+      "If a slower beat is needed, make it carry pressure, evidence, relationship movement, or a concrete setup for the next action.",
+      "",
+      "## Three-question check on the key choice",
+      "The protagonist's main choice must have a reason, match current interest, and stay consistent with the established persona.",
+      "",
+      "## Required end-of-chapter change",
+      "End with a concrete change in information, pressure, relationship, objective, or risk so the chapter is not only summary.",
+      "",
+      "## Hook ledger for this chapter",
+      "advance: keep the active promise moving; resolve: only settle what has evidence; defer: preserve larger threads for later chapters.",
+      "",
+      "## Do not",
+      "Do not contradict established facts, ignore the user's current instruction, or turn the fallback memo into a new outline.",
+      "",
+      "## Planner warning",
+      `The model failed to produce a valid chapter memo after ${MEMO_RETRY_LIMIT} attempts. Last parser error: ${input.errorMessage}`,
+    ].join("\n"); }
 
     return [
       `# 第 ${input.chapterNumber} 章 memo`,
@@ -506,17 +496,13 @@ export class PlannerAgent extends BaseAgent {
     return this.extractListItems(focusSection, limit);
   }
 
-  private renderHookBudget(activeCount: number, language: "zh" | "en"): string {
+  private renderHookBudget(activeCount: number, language: "zh" | "en" | "vi"): string {
     const cap = 12;
     if (activeCount < 10) {
-      return language === "en"
-        ? `### Hook Budget\n- ${activeCount} active hooks (capacity: ${cap})`
-        : `### 伏笔预算\n- 当前 ${activeCount} 条活跃伏笔（容量：${cap}）`;
+      return language === "zh" ? `### 伏笔预算\n- 当前 ${activeCount} 条活跃伏笔（容量：${cap}）` : `### Hook Budget\n- ${activeCount} active hooks (capacity: ${cap})`;
     }
     const remaining = Math.max(0, cap - activeCount);
-    return language === "en"
-      ? `### Hook Budget\n- ${activeCount} active hooks — approaching capacity (${cap}). Only ${remaining} new hook(s) allowed. Prioritize resolving existing debt over opening new threads.`
-      : `### 伏笔预算\n- 当前 ${activeCount} 条活跃伏笔——接近容量上限（${cap}）。仅剩 ${remaining} 个新坑位。优先回收旧债，不要轻易开新线。`;
+    return language === "zh" ? `### 伏笔预算\n- 当前 ${activeCount} 条活跃伏笔——接近容量上限（${cap}）。仅剩 ${remaining} 个新坑位。优先回收旧债，不要轻易开新线。` : `### Hook Budget\n- ${activeCount} active hooks — approaching capacity (${cap}). Only ${remaining} new hook(s) allowed. Prioritize resolving existing debt over opening new threads.`;
   }
 
   private extractSection(content: string, headings: ReadonlyArray<string>): string | undefined {
@@ -797,7 +783,7 @@ export class PlannerAgent extends BaseAgent {
   private renderIntentMarkdown(
     intent: ChapterIntent,
     memo: ChapterMemo,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
     pendingHooks: string,
     chapterSummaries: string,
     activeHookCount: number,

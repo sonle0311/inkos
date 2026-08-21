@@ -250,12 +250,18 @@ Produce the memo for chapter {{chapterNumber}}. Strictly emit the plain Markdown
  * Defaults to zh for backward compatibility — explicit "en" required for
  * the English variant.
  */
-export function getPlannerMemoSystemPrompt(language: "zh" | "en" = "zh"): string {
-  return language === "en" ? PLANNER_MEMO_SYSTEM_PROMPT_EN : PLANNER_MEMO_SYSTEM_PROMPT;
+const PLANNER_MEMO_VI_PREFIX = `【LANGUAGE OVERRIDE】Write ALL memo content (goal, reasons, directives, keep/avoid lists, field values) in Vietnamese (tiếng Việt). Keep the Markdown section headings and output structure unchanged.
+
+`;
+
+export function getPlannerMemoSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language === "vi") return PLANNER_MEMO_VI_PREFIX + PLANNER_MEMO_SYSTEM_PROMPT_EN;
+  return language === "zh" ? PLANNER_MEMO_SYSTEM_PROMPT : PLANNER_MEMO_SYSTEM_PROMPT_EN;
 }
 
-export function getPlannerMemoUserTemplate(language: "zh" | "en" = "zh"): string {
-  return language === "en" ? PLANNER_MEMO_USER_TEMPLATE_EN : PLANNER_MEMO_USER_TEMPLATE;
+export function getPlannerMemoUserTemplate(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language === "vi") return PLANNER_MEMO_VI_PREFIX + PLANNER_MEMO_USER_TEMPLATE_EN;
+  return language === "zh" ? PLANNER_MEMO_USER_TEMPLATE : PLANNER_MEMO_USER_TEMPLATE_EN;
 }
 
 export const PLANNER_MEMO_USER_TEMPLATE = `# 第 {{chapterNumber}} 章 memo 请求
@@ -308,14 +314,14 @@ export interface PlannerUserMessageInput {
   readonly bookRulesRelevant: string;
   readonly brief?: string;
   readonly chapterContext?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export function buildPlannerUserMessage(input: PlannerUserMessageInput): string {
   const language = input.language ?? "zh";
   const template = getPlannerMemoUserTemplate(language);
-  const yesText = language === "en" ? "yes" : "是";
-  const noText = language === "en" ? "no" : "否";
+  const yesText = language === "zh" ? "是" : "yes";
+  const noText = language === "zh" ? "否" : "no";
 
   const briefBlock = buildBriefBlock(input.brief ?? "", language);
   const chapterContextBlock = buildChapterContextBlock(input.chapterContext ?? "", language);
@@ -346,30 +352,26 @@ export function buildPlannerUserMessage(input: PlannerUserMessageInput): string 
  *
  * Returns "" when no brief exists (legacy books without brief.md).
  */
-function buildBriefBlock(brief: string, language: "zh" | "en"): string {
+function buildBriefBlock(brief: string, language: "zh" | "en" | "vi"): string {
   const trimmed = brief.trim();
   if (!trimmed) return "";
-  if (language === "en") {
-    return `## Creative brief (user's original intent — authoritative)
-${trimmed}
+  if (language !== "zh") { return `## Creative brief (user's original intent — authoritative)
+  ${trimmed}
 
-The brief is the user's direct instruction. When planning this chapter, honor the brief's core setup (protagonist concept, world premise, opening mechanics, sample chapter hooks if any) before anything else. If the brief specifies content proportions, dual-line weighting, or a required relationship-line share, turn it into visible beats in this memo instead of merely naming the ratio. Do NOT defer the brief's core setup to later chapters; land it early.`;
-  }
+  The brief is the user's direct instruction. When planning this chapter, honor the brief's core setup (protagonist concept, world premise, opening mechanics, sample chapter hooks if any) before anything else. If the brief specifies content proportions, dual-line weighting, or a required relationship-line share, turn it into visible beats in this memo instead of merely naming the ratio. Do NOT defer the brief's core setup to later chapters; land it early.`; }
   return `## 用户创作 brief（原始意图——最高优先级）
 ${trimmed}
 
 brief 是用户的直接指令。本章规划时，必须优先兑现 brief 里写明的核心设定（主角设定、世界前提、开场机制、样本章回钩子等）。如果 brief 里指定了内容比例、双主线权重或某条关系线必须占比，本章 memo 要把它拆成可见场面，而不是只在总结里提一句。**不要把 brief 里的核心设定推迟到后面的章节**——该在前几章落地的必须落地。`;
 }
 
-function buildChapterContextBlock(chapterContext: string, language: "zh" | "en"): string {
+function buildChapterContextBlock(chapterContext: string, language: "zh" | "en" | "vi"): string {
   const trimmed = chapterContext.trim();
   if (!trimmed) return "";
-  if (language === "en") {
-    return `## Per-chapter user instruction (highest priority for this chapter)
-${trimmed}
+  if (language !== "zh") { return `## Per-chapter user instruction (highest priority for this chapter)
+  ${trimmed}
 
-This is the user's direct instruction for the current chapter. The memo must obey it before the outline fallback. If the user specifies a chapter title, preserve that title exactly in the memo so the writer can use it as CHAPTER_TITLE. If it conflicts with the volume outline, reconcile by keeping continuity but following this chapter instruction.`;
-  }
+  This is the user's direct instruction for the current chapter. The memo must obey it before the outline fallback. If the user specifies a chapter title, preserve that title exactly in the memo so the writer can use it as CHAPTER_TITLE. If it conflicts with the volume outline, reconcile by keeping continuity but following this chapter instruction.`; }
   return `## 本章用户指令（本章最高优先级）
 ${trimmed}
 
@@ -384,17 +386,15 @@ ${trimmed}
 
 export function buildGoldenOpeningGuidance(
   chapterNumber: number,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
   if (chapterNumber > 3) return "";
 
-  if (language === "en") {
-    return `## Golden Opening Guidance — Chapter ${chapterNumber}
+  if (language !== "zh") { return `## Golden Opening Guidance — Chapter ${chapterNumber}
 
-This is chapter ${chapterNumber} of the opening three — the chapters that decide whether a reader stays. The Golden Three Chapters rule assigns each chapter a load-bearing slot: chapter 1 must throw the reader straight into the core conflict (the protagonist enters already facing the main contradiction — chase, dead-end, dispossession, transmigration-as-crisis), not a paragraph of background, family tree, weather, or dynastic preamble. Chapter 2 must put the protagonist's edge — the system, the power, the rebirth-memory, the information advantage — on the stage through one concrete event (not "he awakened a power" narrated, but "he used it for X and Y happened"). Chapter 3 must lock in a concrete short-term goal achievable within the next 3-10 chapters (build the first stake of capital, take down the small antagonist, save someone), giving the story forward pull.
+  This is chapter ${chapterNumber} of the opening three — the chapters that decide whether a reader stays. The Golden Three Chapters rule assigns each chapter a load-bearing slot: chapter 1 must throw the reader straight into the core conflict (the protagonist enters already facing the main contradiction — chase, dead-end, dispossession, transmigration-as-crisis), not a paragraph of background, family tree, weather, or dynastic preamble. Chapter 2 must put the protagonist's edge — the system, the power, the rebirth-memory, the information advantage — on the stage through one concrete event (not "he awakened a power" narrated, but "he used it for X and Y happened"). Chapter 3 must lock in a concrete short-term goal achievable within the next 3-10 chapters (build the first stake of capital, take down the small antagonist, save someone), giving the story forward pull.
 
-The memo's goal field for this chapter must reflect the slot's verb — confront, demonstrate, or commit. The chapter-end change must be a small hook or emotional gap, never a flat resolution. Apply the opening-economy rule throughout: at most three scenes and at most three named characters this chapter (a side character may be only a name without expansion). Information layering is mandatory — basic facts (appearance, status, situation) ride on the protagonist's actions, world rules ride on plot triggers; do not stage a paragraph of exposition.`;
-  }
+  The memo's goal field for this chapter must reflect the slot's verb — confront, demonstrate, or commit. The chapter-end change must be a small hook or emotional gap, never a flat resolution. Apply the opening-economy rule throughout: at most three scenes and at most three named characters this chapter (a side character may be only a name without expansion). Information layering is mandatory — basic facts (appearance, status, situation) ride on the protagonist's actions, world rules ride on plot triggers; do not stage a paragraph of exposition.`; }
 
   return `## 黄金三章规划指引 — 第 ${chapterNumber} 章
 

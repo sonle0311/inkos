@@ -60,16 +60,12 @@ export async function validateChapterTruthPersistence(params: {
     );
   } catch (error) {
     params.logger?.warn(`State validation error for chapter ${params.chapterNumber}: ${String(error)}`);
-    const errorDescription = params.language === "en"
-      ? `State validation unavailable: ${String(error)}`
-      : `状态校验不可用：${String(error)}`;
+    const errorDescription = params.language === "zh" ? `状态校验不可用：${String(error)}` : `State validation unavailable: ${String(error)}`;
     const errorIssue: AuditIssue = {
       severity: "warning",
       category: "state-validation",
       description: errorDescription,
-      suggestion: params.language === "en"
-        ? "Repair chapter state from the persisted body before continuing."
-        : "请先基于已保存正文修复本章 state，再继续后续章节。",
+      suggestion: params.language === "zh" ? "请先基于已保存正文修复本章 state，再继续后续章节。" : "Repair chapter state from the persisted body before continuing.",
     };
     return {
       validation: { passed: true, warnings: [] },

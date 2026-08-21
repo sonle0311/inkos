@@ -1,6 +1,6 @@
 import type { LengthCountingMode, LengthNormalizeMode, LengthSpec } from "../models/length-governance.js";
 
-export type LengthLanguage = "zh" | "en";
+export type LengthLanguage = "zh" | "en" | "vi";
 
 const REFERENCE_TARGET = 2200;
 const SOFT_RANGE_DELTA = 300;
@@ -13,7 +13,7 @@ export const DEFAULT_CHAPTER_LENGTH_ZH = 3000;
 export const DEFAULT_CHAPTER_LENGTH_EN = 2000;
 
 export function defaultChapterLength(language: LengthLanguage = "zh"): number {
-  return language === "en" ? DEFAULT_CHAPTER_LENGTH_EN : DEFAULT_CHAPTER_LENGTH_ZH;
+  return language === "zh" ? DEFAULT_CHAPTER_LENGTH_ZH : DEFAULT_CHAPTER_LENGTH_EN;
 }
 
 export function countChapterLength(
@@ -33,7 +33,7 @@ export function countChapterLength(
 export function resolveLengthCountingMode(
   language: LengthLanguage = "zh",
 ): LengthCountingMode {
-  return language === "en" ? "en_words" : "zh_chars";
+  return language === "zh" ? "zh_chars" : "en_words";
 }
 
 export function formatLengthCount(

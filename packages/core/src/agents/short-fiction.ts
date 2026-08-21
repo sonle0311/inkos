@@ -352,7 +352,7 @@ export function renderShortFictionDraftMarkdown(
   draft: ShortFictionBatchDraft,
   language: ShortFictionLanguage = "zh",
 ): string {
-  const hookHeading = language === "en" ? "## Opening Hook" : "## 开篇钩子";
+  const hookHeading = language === "zh" ? "## 开篇钩子" : "## Opening Hook";
   return [
     `# ${draft.storyTitle}`,
     draft.openingHook ? `${hookHeading}\n\n${draft.openingHook}` : "",
@@ -468,9 +468,7 @@ function normalizeTitle(raw: string): string {
 }
 
 function normalizeChapterTitle(raw: string, number: number, language: ShortFictionLanguage = "zh"): string {
-  const prefixPattern = language === "en"
-    ? new RegExp(`^Chapter\\s*${number}\\s*[:：.\\-–—]?\\s*`, "i")
-    : new RegExp(`^第\\s*${number}\\s*章\\s*`);
+  const prefixPattern = language === "zh" ? new RegExp(`^第\\s*${number}\\s*章\\s*`) : language === "vi" ? new RegExp(`^Chương\\s*${number}\\s*[:：.\\-–—]?\\s*`, "i") : new RegExp(`^Chapter\\s*${number}\\s*[:：.\\-–—]?\\s*`, "i");
   const title = normalizeTitle(raw).replace(prefixPattern, "").trim();
   return title || fallbackChapterTitle(number, language);
 }
@@ -482,20 +480,22 @@ export function formatShortFictionChapterHeading(
 ): string {
   const trimmed = title.trim();
   if (!trimmed) return fallbackChapterTitle(number, language);
-  if (language === "en") {
-    if (new RegExp(`^Chapter\\s*${number}\\b`, "i").test(trimmed)) return trimmed;
-    return `Chapter ${number}: ${trimmed}`;
+  if (language !== "zh") { if (language === "vi") {
+    if (/^Chương\s*\d+\b/i.test(trimmed)) return trimmed;
+    return `Chương ${number}: ${trimmed}`;
   }
+  if (new RegExp(`^Chapter\\s*${number}\\b`, "i").test(trimmed)) return trimmed;
+  return `Chapter ${number}: ${trimmed}`; }
   if (new RegExp(`^第\\s*${number}\\s*章`).test(trimmed)) return trimmed;
   return `第${number}章 ${trimmed}`;
 }
 
 function untitledShortTitle(language: ShortFictionLanguage): string {
-  return language === "en" ? "Untitled Short Story" : "未命名短篇";
+  return language === "zh" ? "未命名短篇" : language === "vi" ? "Truyện chưa đặt tên" : "Untitled Short Story";
 }
 
 function fallbackChapterTitle(number: number, language: ShortFictionLanguage): string {
-  return language === "en" ? `Chapter ${number}` : `第${number}章`;
+  return language === "zh" ? `第${number}章` : language === "vi" ? `Chương ${number}` : `Chapter ${number}`;
 }
 
 // charsPerChapter is the language's native unit (zh chars / en words). The 2.2

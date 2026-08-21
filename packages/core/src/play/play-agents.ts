@@ -13,7 +13,7 @@ import { appendPromptPackGuidance } from "../prompts/prompt-pack.js";
 export interface PlayActionInterpreterInput {
   readonly input: string;
   readonly sceneBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface PlayWorldMutatorInput {
@@ -21,7 +21,7 @@ export interface PlayWorldMutatorInput {
   readonly input: string;
   readonly action: PlayActionIntentInput;
   readonly context: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface PlaySceneRenderInput {
@@ -30,7 +30,7 @@ export interface PlaySceneRenderInput {
   readonly mutationSummary: string;
   readonly stateBrief: string;
   readonly replayContext?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   // The world's premise — a persistent anchor so the scene stays in the
   // established era/setting/genre and doesn't drift (a modern shop must not grow
   // night-watchmen and oil lamps).
@@ -45,7 +45,7 @@ export interface PlaySceneReconcileInput {
   readonly sceneText: string;
   readonly context: string;
   readonly stateBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly worldPremise?: string;
 }
 
@@ -219,9 +219,7 @@ export class PlaySceneRendererAgent extends BaseAgent {
         { role: "assistant", content },
         {
           role: "user",
-          content: language === "en"
-            ? 'That was not strict JSON. Output ONLY one JSON object {"sceneText": "...", "suggestedActions": ["..."]} and nothing else.'
-            : '上面不是严格 JSON。只输出一个 JSON 对象 {"sceneText": "...", "suggestedActions": ["..."]}，不要任何其他文字。',
+          content: language === "zh" ? '上面不是严格 JSON。只输出一个 JSON 对象 {"sceneText": "...", "suggestedActions": ["..."]}，不要任何其他文字。' : 'That was not strict JSON. Output ONLY one JSON object {"sceneText": "...", "suggestedActions": ["..."]} and nothing else.',
         },
       );
     }
@@ -231,7 +229,7 @@ export class PlaySceneRendererAgent extends BaseAgent {
       .replace(/```\s*$/i, "")
       .trim();
     return {
-      sceneText: proseFallback || (language === "en" ? "(The moment holds, unresolved.)" : "（这一拍悬着，没有落定。）"),
+      sceneText: proseFallback || (language === "zh" ? "（这一拍悬着，没有落定。）" : "(The moment holds, unresolved.)"),
       suggestedActions: [],
     };
   }
@@ -285,17 +283,15 @@ function emptyReconciliation(turn: number, actionKind: PlayActionIntent["actionK
   };
 }
 
-function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "You reconcile an interactive-fiction scene with the world graph.",
-      "Compare the rendered prose against the already applied changes and current state summary.",
-      "If the prose introduced a concrete named object, clue, evidence, location, organization, or person that is not represented in the applied changes/current state, output ONLY supplemental PlayMutation entries for those missing graph facts.",
-      "Do not rewrite prose. Do not invent facts that are not in the rendered scene. If nothing is missing, output an empty PlayMutation with empty arrays.",
-      "Use the same eventId/turn/actionKind. For tangible things the player now physically holds, add a holding edge from actor_player with value.role=\"holding\"; if the target is evidence/clue/claim/proof_chain rather than an item, also set value.physical=true. Observed phenomena or learned facts are not holdings.",
-      "Output strict JSON matching PlayMutation.",
-    ].join("\n");
-  }
+function buildSceneReconcilerSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "You reconcile an interactive-fiction scene with the world graph.",
+    "Compare the rendered prose against the already applied changes and current state summary.",
+    "If the prose introduced a concrete named object, clue, evidence, location, organization, or person that is not represented in the applied changes/current state, output ONLY supplemental PlayMutation entries for those missing graph facts.",
+    "Do not rewrite prose. Do not invent facts that are not in the rendered scene. If nothing is missing, output an empty PlayMutation with empty arrays.",
+    "Use the same eventId/turn/actionKind. For tangible things the player now physically holds, add a holding edge from actor_player with value.role=\"holding\"; if the target is evidence/clue/claim/proof_chain rather than an item, also set value.physical=true. Observed phenomena or learned facts are not holdings.",
+    "Output strict JSON matching PlayMutation.",
+  ].join("\n"); }
   return [
     "你负责把互动小说正文和世界图谱对齐。",
     "对照已经应用的本回合变化、当前状态摘要和最终正文。",
@@ -306,32 +302,30 @@ function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "en"): string {
+function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "en" | "vi"): string {
   const actionKind = PlayActionIntentSchema.parse(input.action).actionKind;
   const eventId = `evt-${input.turn}`;
-  if (language === "en") {
-    return [
-      `eventId: ${eventId}`,
-      `turn: ${input.turn}`,
-      `actionKind: ${actionKind}`,
-      "",
-      ...(input.worldPremise ? ["World setting:", input.worldPremise, ""] : []),
-      "Player input:",
-      input.input,
-      "",
-      "Current context before this turn:",
-      input.context,
-      "",
-      "Applied mutation:",
-      JSON.stringify(PlayMutationSchema.parse(input.mutation), null, 2),
-      "",
-      "Current state summary:",
-      input.stateBrief,
-      "",
-      "Rendered scene:",
-      input.sceneText,
-    ].join("\n");
-  }
+  if (language !== "zh") { return [
+    `eventId: ${eventId}`,
+    `turn: ${input.turn}`,
+    `actionKind: ${actionKind}`,
+    "",
+    ...(input.worldPremise ? ["World setting:", input.worldPremise, ""] : []),
+    "Player input:",
+    input.input,
+    "",
+    "Current context before this turn:",
+    input.context,
+    "",
+    "Applied mutation:",
+    JSON.stringify(PlayMutationSchema.parse(input.mutation), null, 2),
+    "",
+    "Current state summary:",
+    input.stateBrief,
+    "",
+    "Rendered scene:",
+    input.sceneText,
+  ].join("\n"); }
   return [
     `eventId: ${eventId}`,
     `turn: ${input.turn}`,
@@ -355,16 +349,14 @@ function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language
   ].join("\n");
 }
 
-function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "You are an interactive-fiction action interpreter.",
-      "Your job is to normalize one line of the player's natural language into one of five action kinds: look / say / move / do / wait.",
-      "Do not add drama for the player, do not advance the plot, do not write scene prose.",
-      "look = observe/examine/recall a clue; say = speak/probe/confront; move = move to a location; do = perform an action/use an item/investigate; wait = wait/stall/watch.",
-      "Output strict JSON, no explanation.",
-    ].join("\n");
-  }
+function buildActionInterpreterSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "You are an interactive-fiction action interpreter.",
+    "Your job is to normalize one line of the player's natural language into one of five action kinds: look / say / move / do / wait.",
+    "Do not add drama for the player, do not advance the plot, do not write scene prose.",
+    "look = observe/examine/recall a clue; say = speak/probe/confront; move = move to a location; do = perform an action/use an item/investigate; wait = wait/stall/watch.",
+    "Output strict JSON, no explanation.",
+  ].join("\n"); }
   return [
     "你是互动小说动作理解器。",
     "你的任务是把玩家一句自然语言，归一成五类动作之一：look / say / move / do / wait。",
@@ -374,18 +366,16 @@ function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "Current scene:",
-      input.sceneBrief,
-      "",
-      "Player input:",
-      input.input,
-      "",
-      "Output fields: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
-    ].join("\n");
-  }
+function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "Current scene:",
+    input.sceneBrief,
+    "",
+    "Player input:",
+    input.input,
+    "",
+    "Output fields: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
+  ].join("\n"); }
   return [
     "当前场景：",
     input.sceneBrief,
@@ -397,34 +387,32 @@ function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, lan
   ].join("\n");
 }
 
-function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "You are an interactive-fiction world-state drafter.",
-      "Based only on the player's action and the current context, propose this turn's possible state changes as a draft.",
-      "Do not write final prose; do not commit to the store on the reducer's behalf; do not let key states jump to completion out of nowhere.",
-      "One player input advances one adjacent beat. If the player gives a chain of actions, apply only the literal chain up to the nearest new pressure point; do not skip through off-screen aftermath, rewards, or resolution beyond what the input directly attempts.",
-      "Do not leap over the process. If the player runs toward, reaches for, uses, opens, or confronts something, account for the movement, resistance, interruption, or immediate pressure inside this same beat instead of jumping straight to an after-the-fact state.",
-      "This engine is genre-neutral: romance, adventure, wuxia, mystery, slice-of-life all use the same structure. Entity types: actor/location/item/evidence/clue/claim/proof_chain/organization/rule/scene/event — use as needed.",
-      "Give every new or important entity a one-line summary (who/what it is and why it matters), not just a status word — the player expands this summary in the side panel.",
-      "Tangible things the player discovers or holds (a clue, a document, a weapon, a token, key evidence) MUST be their own entity (item/evidence/clue), never folded into a person's status — only then can they enter the player's holdings and be tracked. Observed phenomena, knowledge, impressions, or environmental signs are NOT holdings.",
-      "Use entity.status to record state progress for any genre, with status words suited to this world's genre, advancing step by step without skipping (e.g. relationship: stranger -> curious -> attracted -> lover; injury: healthy -> bleeding -> critical; clue: found -> collected -> confirmed).",
-      "The player entity id is fixed: always use id actor_player for the player character. Never rename this id; only replace its label, summary, and status with this world's player identity.",
-      "Whenever a meaningful relationship forms or shifts between entities (ally / rival / kin / suspicion / debt / master-servant …), record it in edges.upsert as {\"fromId\":\"<entity>\",\"type\":\"<relation>\",\"toId\":\"<entity>\",\"value\":{\"role\":\"relation\"}} — this is the ONLY source for the relationship panel, so over-record rather than skip; add a fresh edge when a relationship changes.",
-      "When the player physically holds/carries/keeps/takes a tangible thing, record an edge from actor_player to that entity and set value.role=\"holding\". If the held target is evidence/clue/claim/proof_chain rather than an item, also set value.physical=true. If the player only observes or learns something, use value.role=\"observed\" or a normal relation, never holding.",
-      "The current context may include an entity roster. Reuse those exact ids in entities, edges, evidence, and stateSlots. If you only know a name, use the exact roster label; never invent a new id for the same person/thing (or the panel shows duplicates).",
-      "State tracking is optional and governed by the user's world contract. If the world contract rejects stats, numeric panels, levels, RPG framing, or quantified meters, do NOT output stateSlots; express progress as natural-language entity.status / summary / evidence transitions instead.",
-      "When stateSlots are appropriate, prefer natural-language values unless the user explicitly asked for quantitative tracking or the fiction contains a concrete count/clock/deadline. Do not create numbers just because the schema supports them.",
-      "Early on (the first few turns), seed only the state the premise already establishes: a concrete deadline may become a timer slot if the world permits quantified tracking; the central mystery/objective -> its first clue/evidence entity; already-named key characters -> actor entities with a one-line summary. Don't leave the opening world nearly empty.",
-      "Restraint: only create entities and meters the story actually makes real — never invent gratuitous stats or items just to fill the panel.",
-      "Only use evidence.transitions for the evidence lifecycle when this world is genuinely an investigation/mystery; otherwise leave it empty.",
-      "If the player's action is invalid or information is insufficient, set blocked=true and write blockedReason.",
-      "Time is a synchronization axis, not a fixed tick. For every non-opening turn, set timeAdvance with: elapsed = the natural-language duration spent by this action; anchor = the world time/phase after the action if the world has a clock, season, phase, day/night, retreat period, deadline, or other temporal anchor; rationale = why this duration is right; synchronized = what relevant NPCs/places/pressures changed during the same elapsed time. A glance may pass seconds, a trip half a day, cultivation three years — obey the user's world contract; never invent a universal turn length.",
-      "Output strict JSON matching PlayMutation: eventId, turn, actionKind, summary, timeAdvance, entities, edges, stateSlots, evidence, blocked, blockedReason, notes.",
-      "The following is only a JSON-shape example. Do not reuse its labels, names, or story facts in the actual world; the reserved player id actor_player is the only example id you must keep for the player entity:",
-    `{"eventId":"evt-1","turn":1,"actionKind":"look","summary":"The player-character finds a sample clue and a sample key.","timeAdvance":{"elapsed":"a few breaths","anchor":"still in the same rain-soaked minute","rationale":"The player only examined the immediate scene.","synchronized":["The counterpart notices the pause but does not act openly yet."]},"entities":{"upsert":[{"id":"actor_player","type":"actor","label":"player-character","summary":"Reserved player entity id; replace label, summary, and status with the current world's player identity.","status":"alert","updatedEventId":"evt-1"},{"id":"actor_counterpart","type":"actor","label":"counterpart","summary":"Placeholder for a relevant person in the current world; replace with the real roster id/label.","status":"guarded","updatedEventId":"evt-1"},{"id":"evidence_sample_clue","type":"evidence","label":"sample clue","summary":"A tangible clue discovered this turn; replace with a real object from the scene.","status":"seen","updatedEventId":"evt-1"},{"id":"item_sample_key","type":"item","label":"sample key","summary":"A tangible item collected this turn; replace with a real object from the scene.","status":"collected","updatedEventId":"evt-1"}]},"edges":{"upsert":[{"fromId":"actor_player","type":"suspicious_of","toId":"actor_counterpart","value":{"role":"relation"}},{"fromId":"actor_player","type":"holds","toId":"item_sample_key","value":{"role":"holding"}},{"fromId":"actor_player","type":"holds","toId":"evidence_sample_clue","value":{"role":"holding","physical":true}}]},"stateSlots":{"upsert":[{"id":"slot_sample_timer","kind":"timer","label":"sample timer","value":3,"updatedEventId":"evt-1"}]}}`,
-    ].join("\n");
-  }
+function buildWorldMutatorSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "You are an interactive-fiction world-state drafter.",
+    "Based only on the player's action and the current context, propose this turn's possible state changes as a draft.",
+    "Do not write final prose; do not commit to the store on the reducer's behalf; do not let key states jump to completion out of nowhere.",
+    "One player input advances one adjacent beat. If the player gives a chain of actions, apply only the literal chain up to the nearest new pressure point; do not skip through off-screen aftermath, rewards, or resolution beyond what the input directly attempts.",
+    "Do not leap over the process. If the player runs toward, reaches for, uses, opens, or confronts something, account for the movement, resistance, interruption, or immediate pressure inside this same beat instead of jumping straight to an after-the-fact state.",
+    "This engine is genre-neutral: romance, adventure, wuxia, mystery, slice-of-life all use the same structure. Entity types: actor/location/item/evidence/clue/claim/proof_chain/organization/rule/scene/event — use as needed.",
+    "Give every new or important entity a one-line summary (who/what it is and why it matters), not just a status word — the player expands this summary in the side panel.",
+    "Tangible things the player discovers or holds (a clue, a document, a weapon, a token, key evidence) MUST be their own entity (item/evidence/clue), never folded into a person's status — only then can they enter the player's holdings and be tracked. Observed phenomena, knowledge, impressions, or environmental signs are NOT holdings.",
+    "Use entity.status to record state progress for any genre, with status words suited to this world's genre, advancing step by step without skipping (e.g. relationship: stranger -> curious -> attracted -> lover; injury: healthy -> bleeding -> critical; clue: found -> collected -> confirmed).",
+    "The player entity id is fixed: always use id actor_player for the player character. Never rename this id; only replace its label, summary, and status with this world's player identity.",
+    "Whenever a meaningful relationship forms or shifts between entities (ally / rival / kin / suspicion / debt / master-servant …), record it in edges.upsert as {\"fromId\":\"<entity>\",\"type\":\"<relation>\",\"toId\":\"<entity>\",\"value\":{\"role\":\"relation\"}} — this is the ONLY source for the relationship panel, so over-record rather than skip; add a fresh edge when a relationship changes.",
+    "When the player physically holds/carries/keeps/takes a tangible thing, record an edge from actor_player to that entity and set value.role=\"holding\". If the held target is evidence/clue/claim/proof_chain rather than an item, also set value.physical=true. If the player only observes or learns something, use value.role=\"observed\" or a normal relation, never holding.",
+    "The current context may include an entity roster. Reuse those exact ids in entities, edges, evidence, and stateSlots. If you only know a name, use the exact roster label; never invent a new id for the same person/thing (or the panel shows duplicates).",
+    "State tracking is optional and governed by the user's world contract. If the world contract rejects stats, numeric panels, levels, RPG framing, or quantified meters, do NOT output stateSlots; express progress as natural-language entity.status / summary / evidence transitions instead.",
+    "When stateSlots are appropriate, prefer natural-language values unless the user explicitly asked for quantitative tracking or the fiction contains a concrete count/clock/deadline. Do not create numbers just because the schema supports them.",
+    "Early on (the first few turns), seed only the state the premise already establishes: a concrete deadline may become a timer slot if the world permits quantified tracking; the central mystery/objective -> its first clue/evidence entity; already-named key characters -> actor entities with a one-line summary. Don't leave the opening world nearly empty.",
+    "Restraint: only create entities and meters the story actually makes real — never invent gratuitous stats or items just to fill the panel.",
+    "Only use evidence.transitions for the evidence lifecycle when this world is genuinely an investigation/mystery; otherwise leave it empty.",
+    "If the player's action is invalid or information is insufficient, set blocked=true and write blockedReason.",
+    "Time is a synchronization axis, not a fixed tick. For every non-opening turn, set timeAdvance with: elapsed = the natural-language duration spent by this action; anchor = the world time/phase after the action if the world has a clock, season, phase, day/night, retreat period, deadline, or other temporal anchor; rationale = why this duration is right; synchronized = what relevant NPCs/places/pressures changed during the same elapsed time. A glance may pass seconds, a trip half a day, cultivation three years — obey the user's world contract; never invent a universal turn length.",
+    "Output strict JSON matching PlayMutation: eventId, turn, actionKind, summary, timeAdvance, entities, edges, stateSlots, evidence, blocked, blockedReason, notes.",
+    "The following is only a JSON-shape example. Do not reuse its labels, names, or story facts in the actual world; the reserved player id actor_player is the only example id you must keep for the player entity:",
+  `{"eventId":"evt-1","turn":1,"actionKind":"look","summary":"The player-character finds a sample clue and a sample key.","timeAdvance":{"elapsed":"a few breaths","anchor":"still in the same rain-soaked minute","rationale":"The player only examined the immediate scene.","synchronized":["The counterpart notices the pause but does not act openly yet."]},"entities":{"upsert":[{"id":"actor_player","type":"actor","label":"player-character","summary":"Reserved player entity id; replace label, summary, and status with the current world's player identity.","status":"alert","updatedEventId":"evt-1"},{"id":"actor_counterpart","type":"actor","label":"counterpart","summary":"Placeholder for a relevant person in the current world; replace with the real roster id/label.","status":"guarded","updatedEventId":"evt-1"},{"id":"evidence_sample_clue","type":"evidence","label":"sample clue","summary":"A tangible clue discovered this turn; replace with a real object from the scene.","status":"seen","updatedEventId":"evt-1"},{"id":"item_sample_key","type":"item","label":"sample key","summary":"A tangible item collected this turn; replace with a real object from the scene.","status":"collected","updatedEventId":"evt-1"}]},"edges":{"upsert":[{"fromId":"actor_player","type":"suspicious_of","toId":"actor_counterpart","value":{"role":"relation"}},{"fromId":"actor_player","type":"holds","toId":"item_sample_key","value":{"role":"holding"}},{"fromId":"actor_player","type":"holds","toId":"evidence_sample_clue","value":{"role":"holding","physical":true}}]},"stateSlots":{"upsert":[{"id":"slot_sample_timer","kind":"timer","label":"sample timer","value":3,"updatedEventId":"evt-1"}]}}`,
+  ].join("\n"); }
   return [
     "你是互动小说世界状态草案员。",
     "你只根据玩家动作和当前上下文，提出本回合可能发生的状态变化草案。",
@@ -452,22 +440,20 @@ function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      `turn: ${input.turn}`,
-      "Player's words:",
-      input.input,
-      "",
-      "Action interpretation:",
-      JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
-      "",
-      "Current context:",
-      input.context,
-      "",
-      "Requirement: use eventId evt-" + input.turn + "; every new or referenced entity id must be stable, readable, and short.",
-    ].join("\n");
-  }
+function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    `turn: ${input.turn}`,
+    "Player's words:",
+    input.input,
+    "",
+    "Action interpretation:",
+    JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
+    "",
+    "Current context:",
+    input.context,
+    "",
+    "Requirement: use eventId evt-" + input.turn + "; every new or referenced entity id must be stable, readable, and short.",
+  ].join("\n"); }
   return [
     `turn: ${input.turn}`,
     "玩家原话：",
@@ -483,32 +469,32 @@ function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh
   ].join("\n");
 }
 
-export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    const base = [
+export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { const base = [
+    "You are an interactive-fiction scene-response author.",
+    "Write the response only from the already-applied state; do not overturn the reducer's results.",
+    "Concrete new objects, clues, evidence, locations, organizations, or named people can only appear if they are already present in Applied changes or Current state summary. If the prose needs a new concrete thing, it must have been created by the mutator first; otherwise describe mood, pressure, or an unnamed detail instead.",
+    "It should read like a playable novel — action, senses, pressure, breathing room — never a system log and never a menu-narration that herds the player into picking something.",
+    "Bridge from the player's action first. Even though the state is already applied, do not start as if everything is already over; write the follow-through, contact, resistance, interruption, and immediate consequence so the action connects to the new state.",
+    "Do not jump straight to the after-action result, and do not write epilogue-style summaries, morals, or closing-theme lines. End on an immediate sensory pressure, changed position, exposed detail, or nearby consequence.",
+    "Stay strictly inside the world the premise established — era, place, tech level, genre tone must stay consistent. Never introduce elements that don't belong: a modern-city story must not grow night-watchmen / oil lamps; a historical/wuxia story must not sprout phones / cars / computers. Every detail lands inside the given world.",
+    // Presence is a valid turn.
+    "The player is not always 'acting'. When they merely observe, linger, feel, idle-chat, or do nothing, give an immersive beat — one living detail, a smell, a bystander's small movement, a thought crossing their mind. NEVER say 'there's nothing more to see' / 'you already looked' / 'stop stalling', and never nag them to hurry up and act. Let the beat breathe.",
+    // The world runs on its own clock.
+    "The world is not inert. Time moves, the deadline closes in, side characters act on their own, something stirs in the distance, off-screen events happen. Even on a turn where the player did nothing, nudge the world forward a little — so the pull to move forward comes from the STORY (the trail goes cold / the deadline nears / someone moved first), not from the narration pestering them to choose.",
+    "If Current state summary includes a Time section, treat elapsed and anchor as canonical. Render the scene after exactly that elapsed interval, at that resulting world time/phase, and include the synchronized pressure/character movement naturally in prose. Do not invent another clock reading, another elapsed amount, or a fixed tick label.",
+      ...(language === "vi" ? ["【LANGUAGE OVERRIDE】Write sceneText and suggestedActions entirely in Vietnamese (tiếng Việt). JSON keys stay unchanged."] : []),
       "You are an interactive-fiction scene-response author.",
-      "Write the response only from the already-applied state; do not overturn the reducer's results.",
-      "Concrete new objects, clues, evidence, locations, organizations, or named people can only appear if they are already present in Applied changes or Current state summary. If the prose needs a new concrete thing, it must have been created by the mutator first; otherwise describe mood, pressure, or an unnamed detail instead.",
-      "It should read like a playable novel — action, senses, pressure, breathing room — never a system log and never a menu-narration that herds the player into picking something.",
-      "Bridge from the player's action first. Even though the state is already applied, do not start as if everything is already over; write the follow-through, contact, resistance, interruption, and immediate consequence so the action connects to the new state.",
-      "Do not jump straight to the after-action result, and do not write epilogue-style summaries, morals, or closing-theme lines. End on an immediate sensory pressure, changed position, exposed detail, or nearby consequence.",
-      "Stay strictly inside the world the premise established — era, place, tech level, genre tone must stay consistent. Never introduce elements that don't belong: a modern-city story must not grow night-watchmen / oil lamps; a historical/wuxia story must not sprout phones / cars / computers. Every detail lands inside the given world.",
-      // Presence is a valid turn.
-      "The player is not always 'acting'. When they merely observe, linger, feel, idle-chat, or do nothing, give an immersive beat — one living detail, a smell, a bystander's small movement, a thought crossing their mind. NEVER say 'there's nothing more to see' / 'you already looked' / 'stop stalling', and never nag them to hurry up and act. Let the beat breathe.",
-      // The world runs on its own clock.
-      "The world is not inert. Time moves, the deadline closes in, side characters act on their own, something stirs in the distance, off-screen events happen. Even on a turn where the player did nothing, nudge the world forward a little — so the pull to move forward comes from the STORY (the trail goes cold / the deadline nears / someone moved first), not from the narration pestering them to choose.",
-      "If Current state summary includes a Time section, treat elapsed and anchor as canonical. Render the scene after exactly that elapsed interval, at that resulting world time/phase, and include the synchronized pressure/character movement naturally in prose. Do not invent another clock reading, another elapsed amount, or a fixed tick label.",
-      "Respect negative player intent as fact. If the player's words say they did NOT touch, open, take, leave, attack, or speak, do not narrate them doing it by implication; write the restraint itself and the world's response to that restraint.",
-      // Don't herd — and don't smuggle the herding into a character's mouth.
-      "Do not end with herding questions like 'What do you do?' / 'Which way?'. And do NOT route the same pressure through a companion who keeps listing options ('go to A, or B?') — a sidekick is not an options dispenser. Most beats should NOT end on a pending question at all: land on an image, a sound, a smell, or a hanging tension, and stop. Only when the player is genuinely at a fork that demands a decision may a question surface — sparingly.",
-      "sceneText is PURE narrative prose. Never put a choice list in the body — no 'Options:' / 'What do you do?' followed by A/B/C, no '- ' bulleted options — no matter how urgent or fork-like the moment is (a tense escape is NOT an excuse for a menu). Weave the available routes into the scene itself (the bamboo by the wall, the half-open skylight, the alley toward the river) and let the player decide by free input. Any springboard goes ONLY in the suggestedActions field, kept sparse — never a menu in the prose.",
-      "Example (applies even at a life-or-death beat) — [WRONG, never write this] 'The zombie lunges, the axe is stuck. React now:\\n- yank the axe and swing\\n- squeeze sideways through\\n- roll back'; [RIGHT] 'Its claws are already spread, the sour reek of rot in your nose. Your axe is wedged in the twenty-centimeter gap of the door, and it won't come free. Its weight bears down—'. Take the danger to its peak, then stop, and hand the 'what now' entirely to the player's free input — never list options for them.",
-    ];
-    const actionsRule = mode === "guided"
-      ? "suggestedActions: give 0-3 as optional springboards ('you could…'), ONLY at a genuine decision point — not every turn. They are hints, not the only way forward; the player can type freely or just stay put at any time."
-      : "suggestedActions: 0-3 short hints, optional, never restricting the player's input; omit them when there is no real decision point.";
-    return [...base, actionsRule, "Output strict JSON: sceneText, suggestedActions."].join("\n");
-  }
+    "Respect negative player intent as fact. If the player's words say they did NOT touch, open, take, leave, attack, or speak, do not narrate them doing it by implication; write the restraint itself and the world's response to that restraint.",
+    // Don't herd — and don't smuggle the herding into a character's mouth.
+    "Do not end with herding questions like 'What do you do?' / 'Which way?'. And do NOT route the same pressure through a companion who keeps listing options ('go to A, or B?') — a sidekick is not an options dispenser. Most beats should NOT end on a pending question at all: land on an image, a sound, a smell, or a hanging tension, and stop. Only when the player is genuinely at a fork that demands a decision may a question surface — sparingly.",
+    "sceneText is PURE narrative prose. Never put a choice list in the body — no 'Options:' / 'What do you do?' followed by A/B/C, no '- ' bulleted options — no matter how urgent or fork-like the moment is (a tense escape is NOT an excuse for a menu). Weave the available routes into the scene itself (the bamboo by the wall, the half-open skylight, the alley toward the river) and let the player decide by free input. Any springboard goes ONLY in the suggestedActions field, kept sparse — never a menu in the prose.",
+    "Example (applies even at a life-or-death beat) — [WRONG, never write this] 'The zombie lunges, the axe is stuck. React now:\\n- yank the axe and swing\\n- squeeze sideways through\\n- roll back'; [RIGHT] 'Its claws are already spread, the sour reek of rot in your nose. Your axe is wedged in the twenty-centimeter gap of the door, and it won't come free. Its weight bears down—'. Take the danger to its peak, then stop, and hand the 'what now' entirely to the player's free input — never list options for them.",
+  ];
+  const actionsRule = mode === "guided"
+    ? "suggestedActions: give 0-3 as optional springboards ('you could…'), ONLY at a genuine decision point — not every turn. They are hints, not the only way forward; the player can type freely or just stay put at any time."
+    : "suggestedActions: 0-3 short hints, optional, never restricting the player's input; omit them when there is no real decision point.";
+  return [...base, actionsRule, "Output strict JSON: sceneText, suggestedActions."].join("\n"); }
   const base = [
     "你是互动小说场景回应作者。",
     "你只能根据已经应用后的状态写回应，不要推翻 reducer 结果。",
@@ -534,25 +520,23 @@ export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open",
   return [...base, actionsRule, "输出严格 JSON：sceneText, suggestedActions。"].join("\n");
 }
 
-function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "en"): string {
+function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "en" | "vi"): string {
   const premise = input.worldPremise?.trim();
-  if (language === "en") {
-    return [
-      ...(premise ? ["World setting (always obey):", premise, ""] : []),
-      "Player's words:",
-      input.input,
-      "",
-      "Action:",
-      JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
-      "",
-      "Applied changes this turn:",
-      input.mutationSummary,
-      "",
-      "Current state summary:",
-      input.stateBrief,
-      input.replayContext ? ["", "Replay constraints:", input.replayContext].join("\n") : "",
-    ].join("\n");
-  }
+  if (language !== "zh") { return [
+    ...(premise ? ["World setting (always obey):", premise, ""] : []),
+    "Player's words:",
+    input.input,
+    "",
+    "Action:",
+    JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
+    "",
+    "Applied changes this turn:",
+    input.mutationSummary,
+    "",
+    "Current state summary:",
+    input.stateBrief,
+    input.replayContext ? ["", "Replay constraints:", input.replayContext].join("\n") : "",
+  ].join("\n"); }
   return [
     ...(premise ? ["世界设定（始终遵守）：", premise, ""] : []),
     "玩家原话：",

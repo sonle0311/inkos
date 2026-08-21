@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import type { Api, Context, Model, SimpleStreamOptions } from "@mariozechner/pi-ai";
+import type { PipelineRunner } from "../pipeline/runner.js";
 
 const EMPTY_USAGE = {
   input: 0,
@@ -12,11 +14,18 @@ const EMPTY_USAGE = {
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 };
 
-const { agentInstances, streamCalls, heldStreamCompletions, heldStreamWaiters } = vi.hoisted(() => ({
+const {
+  agentInstances,
+  streamCalls,
+  heldStreamCompletions,
+  heldStreamWaiters,
+  envApiKeyOverrides,
+} = vi.hoisted(() => ({
   agentInstances: [] as any[],
-  streamCalls: [] as Array<{ model: any; context: any }>,
+  streamCalls: [] as Array<{ model: Model<Api>; context: Context; apiKey?: string }>,
   heldStreamCompletions: [] as Array<() => void>,
   heldStreamWaiters: [] as Array<() => void>,
+  envApiKeyOverrides: {} as Record<string, string | undefined>,
 }));
 
 vi.mock("@mariozechner/pi-agent-core", async () => {
@@ -32,10 +41,6 @@ vi.mock("@mariozechner/pi-agent-core", async () => {
 
 vi.mock("@mariozechner/pi-ai", async () => {
   const actual = await vi.importActual<any>("@mariozechner/pi-ai");
-
-  function clone(value: unknown): unknown {
-    return JSON.parse(JSON.stringify(value));
-  }
 
   function textFromContent(content: unknown): string {
     if (typeof content === "string") return content;
@@ -74,8 +79,18 @@ vi.mock("@mariozechner/pi-ai", async () => {
     };
   }
 
-  const streamSimple = vi.fn((model: any, context: any) => {
-    streamCalls.push({ model: clone(model), context: clone(context) });
+  const streamSimple = vi.fn((model: Model<Api>, context: Context, options?: SimpleStreamOptions) => {
+    streamCalls.push({
+      model: structuredClone(model),
+      context: {
+        ...context,
+        messages: structuredClone(context.messages),
+      },
+      ...(options?.apiKey ? { apiKey: options.apiKey } : {}),
+    });
+    if (!options?.apiKey) {
+      throw new Error(`No API key for provider: ${model.provider}`);
+    }
     const stream = actual.createAssistantMessageEventStream();
     const last = context.messages.at(-1);
     const prompt = lastVisibleUserText(context.messages);
@@ -190,7 +205,11 @@ vi.mock("@mariozechner/pi-ai", async () => {
   return {
     ...actual,
     streamSimple,
-    getEnvApiKey: vi.fn(() => "fake-key"),
+    getEnvApiKey: vi.fn((provider: string) => (
+      Object.prototype.hasOwnProperty.call(envApiKeyOverrides, provider)
+        ? envApiKeyOverrides[provider]
+        : "fake-key"
+    )),
     getModel: vi.fn((provider: string, id: string) => ({
       provider,
       id,
@@ -242,6 +261,21 @@ async function writeProjectAgentSkill(
   );
 }
 
+function createOpenAICompatibleModel(baseUrl: string): Model<"openai-completions"> {
+  return {
+    provider: "openai",
+    id: "glm/glm-5.2",
+    name: "glm/glm-5.2",
+    api: "openai-completions",
+    baseUrl,
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 128_000,
+    maxTokens: 16_384,
+  };
+}
+
 describe("runAgentSession cache — bookId switch", () => {
   let projectRoot: string;
   let otherProjectRoot: string | null;
@@ -261,6 +295,9 @@ describe("runAgentSession cache — bookId switch", () => {
     );
     agentInstances.length = 0;
     streamCalls.length = 0;
+    for (const provider of Object.keys(envApiKeyOverrides)) {
+      delete envApiKeyOverrides[provider];
+    }
     heldStreamCompletions.length = 0;
     heldStreamWaiters.length = 0;
   });
@@ -272,6 +309,10 @@ describe("runAgentSession cache — bookId switch", () => {
     evictAgentCache("s-project-root-cache");
     evictAgentCache("s-interleave-seq");
     evictAgentCache("s-context-window");
+    evictAgentCache("s-local-no-key");
+    evictAgentCache("s-remote-no-key");
+    evictAgentCache("s-local-config-key");
+    evictAgentCache("s-local-env-refresh");
     evictAgentCache("book-create-session");
     evictAgentCache("book-create-confirmed-session");
     evictAgentCache("short-session");
@@ -285,6 +326,89 @@ describe("runAgentSession cache — bookId switch", () => {
     evictAgentCache("abort-session");
     await rm(projectRoot, { recursive: true, force: true });
     if (otherProjectRoot) await rm(otherProjectRoot, { recursive: true, force: true });
+  });
+
+  it("runs a local OpenAI-compatible agent model without a configured API key", async () => {
+    envApiKeyOverrides.openai = undefined;
+    const model = createOpenAICompatibleModel("http://localhost:20128/v1");
+    const pipeline = {} as unknown as PipelineRunner;
+
+    const result = await runAgentSession(
+      {
+        sessionId: "s-local-no-key",
+        bookId: null,
+        language: "vi",
+        pipeline,
+        projectRoot,
+        model,
+        apiKey: "",
+      },
+      "xin chào",
+    );
+
+    expect(result.errorMessage).toBeUndefined();
+    expect(result.responseText).toBe("ok");
+    expect(streamCalls.at(-1)?.apiKey).toBeTruthy();
+  });
+
+  it("does not synthesize an API key for remote OpenAI-compatible endpoints", async () => {
+    envApiKeyOverrides.openai = undefined;
+    const result = await runAgentSession(
+      {
+        sessionId: "s-remote-no-key",
+        bookId: null,
+        language: "en",
+        pipeline: {} as unknown as PipelineRunner,
+        projectRoot,
+        model: createOpenAICompatibleModel("https://api.example.com/v1"),
+        apiKey: "",
+      },
+      "hello",
+    );
+
+    expect(result.errorMessage).toBe("No API key for provider: openai");
+    expect(streamCalls.at(-1)?.apiKey).toBeUndefined();
+  });
+
+  it("prefers a configured API key over the environment and local fallback", async () => {
+    envApiKeyOverrides.openai = "env-openai-key";
+    const result = await runAgentSession(
+      {
+        sessionId: "s-local-config-key",
+        bookId: null,
+        language: "en",
+        pipeline: {} as unknown as PipelineRunner,
+        projectRoot,
+        model: createOpenAICompatibleModel("http://localhost:20128/v1"),
+        apiKey: "configured-openai-key",
+      },
+      "hello",
+    );
+
+    expect(result.errorMessage).toBeUndefined();
+    expect(streamCalls.at(-1)?.apiKey).toBe("configured-openai-key");
+  });
+
+  it("reads an environment API key on every turn before using the local fallback", async () => {
+    envApiKeyOverrides.openai = undefined;
+    const config = {
+      sessionId: "s-local-env-refresh",
+      bookId: null,
+      language: "en",
+      pipeline: {} as unknown as PipelineRunner,
+      projectRoot,
+      model: createOpenAICompatibleModel("http://localhost:20128/v1"),
+      apiKey: "",
+    };
+
+    await runAgentSession(config, "first");
+    const fallbackApiKey = streamCalls.at(-1)?.apiKey;
+    envApiKeyOverrides.openai = "rotated-env-openai-key";
+    await runAgentSession(config, "second");
+
+    expect(fallbackApiKey).toBeTruthy();
+    expect(streamCalls.at(-1)?.apiKey).toBe("rotated-env-openai-key");
+    expect(agentInstances).toHaveLength(1);
   });
 
   it("rebuilds Agent when bookId changes for same sessionId", async () => {

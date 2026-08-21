@@ -34,7 +34,7 @@ export interface ScriptCreationRunOptions {
   readonly requirements?: string;
   readonly episodeCount?: number;
   readonly episodeDuration?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -53,7 +53,7 @@ export interface StoryboardCreationRunOptions {
   readonly aspectRatio?: string;
   readonly granularity?: string;
   readonly maxShots?: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -73,7 +73,7 @@ export interface InteractiveFilmCreationRunOptions {
   readonly episodeDuration?: string;
   readonly budget?: string;
   readonly referenceMode?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -390,20 +390,18 @@ function buildInteractiveFilmGraphPremise(
   script: string,
   imagePrompts: string,
 ): string {
-  if ((input.language ?? "zh") === "en") {
-    return [
-      `Creation brief: ${input.requirements}`,
-      input.targetAudience ? `Target audience: ${input.targetAudience}` : "",
-      input.episodeCount ? `Segments/episodes: ${input.episodeCount}` : "",
-      input.episodeDuration ? `Per-segment duration: ${input.episodeDuration}` : "",
-      input.budget ? `Budget: ${input.budget}` : "",
-      input.referenceMode ? `Reference mode: ${input.referenceMode}` : "",
-      `Story tree:\n${storyTree}`,
-      `Variables and flags:\n${flags}`,
-      `Interactive script:\n${script}`,
-      `Image prompts:\n${imagePrompts}`,
-    ].filter(Boolean).join("\n\n");
-  }
+  if ((input.language ?? "zh") !== "zh") { return [
+    `Creation brief: ${input.requirements}`,
+    input.targetAudience ? `Target audience: ${input.targetAudience}` : "",
+    input.episodeCount ? `Segments/episodes: ${input.episodeCount}` : "",
+    input.episodeDuration ? `Per-segment duration: ${input.episodeDuration}` : "",
+    input.budget ? `Budget: ${input.budget}` : "",
+    input.referenceMode ? `Reference mode: ${input.referenceMode}` : "",
+    `Story tree:\n${storyTree}`,
+    `Variables and flags:\n${flags}`,
+    `Interactive script:\n${script}`,
+    `Image prompts:\n${imagePrompts}`,
+  ].filter(Boolean).join("\n\n"); }
   return [
     `创作需求：${input.requirements}`,
     input.targetAudience ? `目标受众：${input.targetAudience}` : "",
@@ -590,9 +588,9 @@ async function ensureProjectDir(projectRoot: string, relativePath: string): Prom
 function mergeRequirements(
   instruction: string,
   requirements: string | undefined,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
-  const extraLabel = language === "en" ? "Additional requirements:" : "补充要求：";
+  const extraLabel = language === "zh" ? "补充要求：" : "Additional requirements:";
   return [
     instruction.trim(),
     requirements?.trim() ? `\n${extraLabel}\n${requirements.trim()}` : "",

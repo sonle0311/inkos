@@ -63,7 +63,7 @@ export function isHookWithinChapterWindow(
   return hook.startChapter > chapterNumber && hook.startChapter <= chapterNumber + lookahead;
 }
 
-const LABELS: Record<"zh" | "en", Record<HookPayoffTiming, string>> = {
+const LABELS: Record<"zh" | "en" | "vi", Record<HookPayoffTiming, string>> = {
   en: {
     immediate: "immediate",
     "near-term": "near-term",
@@ -77,6 +77,13 @@ const LABELS: Record<"zh" | "en", Record<HookPayoffTiming, string>> = {
     "mid-arc": "中程",
     "slow-burn": "慢烧",
     endgame: "终局",
+  },
+  vi: {
+    immediate: "tức thì",
+    "near-term": "gần đây",
+    "mid-arc": "giữa truyện",
+    "slow-burn": "cháy chậm",
+    endgame: "kết cuộc",
   },
 };
 
@@ -142,7 +149,7 @@ export function resolveHookPayoffTiming(params: {
 
 export function localizeHookPayoffTiming(
   timing: HookPayoffTiming,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   return LABELS[language][timing];
 }

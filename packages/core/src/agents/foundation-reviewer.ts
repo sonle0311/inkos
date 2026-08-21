@@ -25,7 +25,7 @@ export class FoundationReviewerAgent extends BaseAgent {
     readonly mode: "original" | "fanfic" | "series";
     readonly sourceCanon?: string;
     readonly styleGuide?: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "en" | "vi";
     readonly targetChapters?: number;
   }): Promise<FoundationReviewResult> {
     const canonBlock = params.sourceCanon
@@ -39,9 +39,7 @@ export class FoundationReviewerAgent extends BaseAgent {
       ? this.originalDimensions(params.language, params.targetChapters)
       : this.derivativeDimensions(params.language, params.mode);
 
-    const systemPrompt = params.language === "en"
-      ? this.buildEnglishReviewPrompt(dimensions, canonBlock, styleBlock)
-      : this.buildChineseReviewPrompt(dimensions, canonBlock, styleBlock);
+    const systemPrompt = params.language === "zh" ? this.buildChineseReviewPrompt(dimensions, canonBlock, styleBlock) : this.buildEnglishReviewPrompt(dimensions, canonBlock, styleBlock);
 
     const userPrompt = this.buildFoundationExcerpt(params.foundation, params.language);
 
@@ -53,49 +51,45 @@ export class FoundationReviewerAgent extends BaseAgent {
     return this.parseReviewResult(response.content, dimensions);
   }
 
-  private originalDimensions(language: "zh" | "en", targetChapters?: number): ReadonlyArray<string> {
+  private originalDimensions(language: "zh" | "en" | "vi", targetChapters?: number): ReadonlyArray<string> {
     const target = Number.isFinite(targetChapters) && targetChapters && targetChapters > 0
       ? Math.round(targetChapters)
       : 40;
     const openingWindow = Math.min(5, target);
     const repeatWindow = Math.min(10, Math.max(3, target));
-    return language === "en"
-      ? [
-          `Core Conflict (Is there a clear, compelling central conflict that can sustain the requested ${target} chapters?)`,
-          `Opening Momentum (Can the first ${openingWindow} chapters create a page-turning hook?)`,
-          "World Coherence (Is the worldbuilding internally consistent and specific?)",
-          "Character Differentiation (Are the main characters distinct in voice and motivation?)",
-          `Pacing Feasibility (Does the outline fit the requested ${target} chapters and avoid repeating the same beat for ${repeatWindow} chapters?)`,
-        ]
-      : [
-          `核心冲突（是否有清晰且有足够张力的核心冲突支撑用户要求的${target}章？）`,
-          `开篇节奏（前${openingWindow}章能否形成翻页驱动力？）`,
-          "世界一致性（世界观是否内洽且具体？）",
-          "角色区分度（主要角色的声音和动机是否各不相同？）",
-          `节奏可行性（大纲是否适配用户要求的${target}章，并避免连续${repeatWindow}章同一种节拍？）`,
-        ];
+    return language === "zh" ? [
+        `核心冲突（是否有清晰且有足够张力的核心冲突支撑用户要求的${target}章？）`,
+        `开篇节奏（前${openingWindow}章能否形成翻页驱动力？）`,
+        "世界一致性（世界观是否内洽且具体？）",
+        "角色区分度（主要角色的声音和动机是否各不相同？）",
+        `节奏可行性（大纲是否适配用户要求的${target}章，并避免连续${repeatWindow}章同一种节拍？）`,
+      ] : [
+        `Core Conflict (Is there a clear, compelling central conflict that can sustain the requested ${target} chapters?)`,
+        `Opening Momentum (Can the first ${openingWindow} chapters create a page-turning hook?)`,
+        "World Coherence (Is the worldbuilding internally consistent and specific?)",
+        "Character Differentiation (Are the main characters distinct in voice and motivation?)",
+        `Pacing Feasibility (Does the outline fit the requested ${target} chapters and avoid repeating the same beat for ${repeatWindow} chapters?)`,
+      ];
   }
 
-  private derivativeDimensions(language: "zh" | "en", mode: "fanfic" | "series"): ReadonlyArray<string> {
+  private derivativeDimensions(language: "zh" | "en" | "vi", mode: "fanfic" | "series"): ReadonlyArray<string> {
     const modeLabel = mode === "fanfic"
-      ? (language === "en" ? "Fan Fiction" : "同人")
-      : (language === "en" ? "Series" : "系列");
+      ? (language === "zh" ? "同人" : "Fan Fiction")
+      : (language === "zh" ? "系列" : "Series");
 
-    return language === "en"
-      ? [
-          `Source DNA Preservation (Does the ${modeLabel} respect the original's world rules, character personalities, and established facts?)`,
-          `New Narrative Space (Is there a clear divergence point or new territory that gives the story room to be ORIGINAL, not a retelling?)`,
-          "Core Conflict (Is the new story's central conflict compelling and distinct from the original?)",
-          "Opening Momentum (Can the first 5 chapters create a page-turning hook without requiring 3 chapters of setup?)",
-          `Pacing Feasibility (Does the outline avoid the trap of re-walking the original's plot beats?)`,
-        ]
-      : [
-          `原作DNA保留（${modeLabel}是否尊重原作的世界规则、角色性格、已确立事实？）`,
-          `新叙事空间（是否有明确的分岔点或新领域，让故事有原创空间，而非复述原作？）`,
-          "核心冲突（新故事的核心冲突是否有足够张力且区别于原作？）",
-          "开篇节奏（前5章能否形成翻页驱动力，不需要3章铺垫？）",
-          `节奏可行性（卷纲是否避免了重走原作剧情节拍的陷阱？）`,
-        ];
+    return language === "zh" ? [
+        `原作DNA保留（${modeLabel}是否尊重原作的世界规则、角色性格、已确立事实？）`,
+        `新叙事空间（是否有明确的分岔点或新领域，让故事有原创空间，而非复述原作？）`,
+        "核心冲突（新故事的核心冲突是否有足够张力且区别于原作？）",
+        "开篇节奏（前5章能否形成翻页驱动力，不需要3章铺垫？）",
+        `节奏可行性（卷纲是否避免了重走原作剧情节拍的陷阱？）`,
+      ] : [
+        `Source DNA Preservation (Does the ${modeLabel} respect the original's world rules, character personalities, and established facts?)`,
+        `New Narrative Space (Is there a clear divergence point or new territory that gives the story room to be ORIGINAL, not a retelling?)`,
+        "Core Conflict (Is the new story's central conflict compelling and distinct from the original?)",
+        "Opening Momentum (Can the first 5 chapters create a page-turning hook without requiring 3 chapters of setup?)",
+        `Pacing Feasibility (Does the outline avoid the trap of re-walking the original's plot beats?)`,
+      ];
   }
 
   private buildChineseReviewPrompt(
@@ -170,10 +164,8 @@ ${canonBlock}${styleBlock}
 Be strict. 80 means "ready to write without changes."`;
   }
 
-  private buildFoundationExcerpt(foundation: ArchitectOutput, language: "zh" | "en"): string {
-    return language === "en"
-      ? `## Story Bible\n${foundation.storyBible}\n\n## Volume Outline\n${foundation.volumeOutline}\n\n## Book Rules\n${foundation.bookRules}\n\n## Initial State\n${foundation.currentState}\n\n## Initial Hooks\n${foundation.pendingHooks}`
-      : `## 世界设定\n${foundation.storyBible}\n\n## 卷纲\n${foundation.volumeOutline}\n\n## 规则\n${foundation.bookRules}\n\n## 初始状态\n${foundation.currentState}\n\n## 初始伏笔\n${foundation.pendingHooks}`;
+  private buildFoundationExcerpt(foundation: ArchitectOutput, language: "zh" | "en" | "vi"): string {
+    return language === "zh" ? `## 世界设定\n${foundation.storyBible}\n\n## 卷纲\n${foundation.volumeOutline}\n\n## 规则\n${foundation.bookRules}\n\n## 初始状态\n${foundation.currentState}\n\n## 初始伏笔\n${foundation.pendingHooks}` : `## Story Bible\n${foundation.storyBible}\n\n## Volume Outline\n${foundation.volumeOutline}\n\n## Book Rules\n${foundation.bookRules}\n\n## Initial State\n${foundation.currentState}\n\n## Initial Hooks\n${foundation.pendingHooks}`;
   }
 
   private parseReviewResult(

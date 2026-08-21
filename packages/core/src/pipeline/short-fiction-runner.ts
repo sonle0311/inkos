@@ -156,21 +156,19 @@ async function produceShort(
     SHORT_FICTION_MAX_CHAPTERS,
   );
   // charsPerChapter is the language's native unit: zh chars (900-1200) or en words (600-800).
-  const charsPerChapter = language === "en"
-    ? boundedInteger(
-        options.charsPerChapter,
-        SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER,
-        "charsPerChapter",
-        SHORT_FICTION_EN_MIN_WORDS_PER_CHAPTER,
-        SHORT_FICTION_EN_MAX_WORDS_PER_CHAPTER,
-      )
-    : boundedInteger(
-        options.charsPerChapter,
-        SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
-        "charsPerChapter",
-        SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
-        SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
-      );
+  const charsPerChapter = language === "zh" ? boundedInteger(
+      options.charsPerChapter,
+      SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
+      "charsPerChapter",
+      SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
+      SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
+    ) : boundedInteger(
+      options.charsPerChapter,
+      SHORT_FICTION_EN_DEFAULT_WORDS_PER_CHAPTER,
+      "charsPerChapter",
+      SHORT_FICTION_EN_MIN_WORDS_PER_CHAPTER,
+      SHORT_FICTION_EN_MAX_WORDS_PER_CHAPTER,
+    );
 
   // Resume the (3-stage) outline from disk if v002 already exists for this id —
   // the writer + everything downstream only need the outline markdown.
@@ -291,25 +289,23 @@ async function produceShort(
       finalDraft = draftV2;
     } catch (error) {
       revisionWarning = error instanceof Error ? error.message : String(error);
-      await writeText(root, join(baseDir, "reviews", "draft-v002-warning.md"), language === "en"
-        ? [
-            "# Second revision not adopted",
-            "",
-            "The system refused to overwrite the complete first draft with an incomplete or unparsable revision.",
-            "",
-            "## Reason",
-            "",
-            revisionWarning,
-          ].join("\n")
-        : [
-            "# 第二轮改稿未采用",
-            "",
-            "系统没有用不完整或解析失败的改稿覆盖完整首稿。",
-            "",
-            "## 原因",
-            "",
-            revisionWarning,
-          ].join("\n"));
+      await writeText(root, join(baseDir, "reviews", "draft-v002-warning.md"), language === "zh" ? [
+          "# 第二轮改稿未采用",
+          "",
+          "系统没有用不完整或解析失败的改稿覆盖完整首稿。",
+          "",
+          "## 原因",
+          "",
+          revisionWarning,
+        ].join("\n") : [
+          "# Second revision not adopted",
+          "",
+          "The system refused to overwrite the complete first draft with an incomplete or unparsable revision.",
+          "",
+          "## Reason",
+          "",
+          revisionWarning,
+        ].join("\n"));
     }
 
     await writeFinalArtifacts(root, baseDir, finalDraft, language);
@@ -495,9 +491,7 @@ async function writePackageArtifacts(
   language: ShortFictionLanguage = "zh",
 ): Promise<void> {
   const finalDir = join(baseDir, "final");
-  const headings = language === "en"
-    ? { intro: "## Synopsis", sellingPoints: "## Selling Points", coverPrompt: "## Cover Prompt" }
-    : { intro: "## 简介", sellingPoints: "## 卖点", coverPrompt: "## 封面提示词" };
+  const headings = language === "zh" ? { intro: "## 简介", sellingPoints: "## 卖点", coverPrompt: "## 封面提示词" } : { intro: "## Synopsis", sellingPoints: "## Selling Points", coverPrompt: "## Cover Prompt" };
   await writeJson(root, join(finalDir, "sales-package.json"), salesPackage);
   await writeText(root, join(finalDir, "sales-package.md"), [
     `# ${salesPackage.title}`,
@@ -908,30 +902,28 @@ function buildCoverImagePrompt(
   mode: CoverPromptMode,
   language: ShortFictionLanguage = "zh",
 ): string {
-  if (language === "en") {
-    const base = [
-      `Title: ${salesPackage.title}`,
-      salesPackage.intro ? `Synopsis: ${salesPackage.intro}` : "",
-      salesPackage.sellingPoints.length > 0 ? `Selling points: ${salesPackage.sellingPoints.join("; ")}` : "",
-      salesPackage.coverPrompt ? `User visual notes: ${salesPackage.coverPrompt}` : "",
-    ].filter(Boolean);
+  if (language !== "zh") { const base = [
+    `Title: ${salesPackage.title}`,
+    salesPackage.intro ? `Synopsis: ${salesPackage.intro}` : "",
+    salesPackage.sellingPoints.length > 0 ? `Selling points: ${salesPackage.sellingPoints.join("; ")}` : "",
+    salesPackage.coverPrompt ? `User visual notes: ${salesPackage.coverPrompt}` : "",
+  ].filter(Boolean);
 
-    if (mode === "generic") {
-      return [
-        "Generate a cover image from the title, synopsis, selling points, and visual notes the user provided.",
-        ...base,
-      ].join("\n");
-    }
-
+  if (mode === "generic") {
     return [
-      "Generate a mobile portrait book cover for an English short story, 3:4 vertical.",
-      ...base.map((line) => line.replace(/^Title: /u, "Main title: ").replace(/^User visual notes: /u, "Packaging notes: ")),
-      "",
-      "Cover direction: a platform short-fiction book cover, not a movie poster. The title lettering is the primary visual — reserve a large two-to-four-line type zone; character in close-up or half-body with a charged expression (cold smirk, shock, breakdown, menace, or payback); props few but large, telegraphing the conflict at a glance.",
-      "High-contrast, high-saturation colors that read as a phone-list thumbnail. Avoid realistic corporate photography, landscape video thumbnails, magazine editorial looks, delicate thin lettering, and long runs of text.",
-      "If the model's text rendering is unreliable, prioritize a clear title whitespace/type-block/layout zone instead of covering the canvas with garbled lettering.",
-    ].filter(Boolean).join("\n");
+      "Generate a cover image from the title, synopsis, selling points, and visual notes the user provided.",
+      ...base,
+    ].join("\n");
   }
+
+  return [
+    "Generate a mobile portrait book cover for an English short story, 3:4 vertical.",
+    ...base.map((line) => line.replace(/^Title: /u, "Main title: ").replace(/^User visual notes: /u, "Packaging notes: ")),
+    "",
+    "Cover direction: a platform short-fiction book cover, not a movie poster. The title lettering is the primary visual — reserve a large two-to-four-line type zone; character in close-up or half-body with a charged expression (cold smirk, shock, breakdown, menace, or payback); props few but large, telegraphing the conflict at a glance.",
+    "High-contrast, high-saturation colors that read as a phone-list thumbnail. Avoid realistic corporate photography, landscape video thumbnails, magazine editorial looks, delicate thin lettering, and long runs of text.",
+    "If the model's text rendering is unreliable, prioritize a clear title whitespace/type-block/layout zone instead of covering the canvas with garbled lettering.",
+  ].filter(Boolean).join("\n"); }
 
   const base = [
     `标题：${salesPackage.title}`,

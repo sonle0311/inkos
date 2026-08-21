@@ -15,7 +15,7 @@ export interface ScriptCreationInput {
   readonly requirements?: string;
   readonly episodeCount?: number;
   readonly episodeDuration?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface StoryboardCreationInput {
@@ -27,7 +27,7 @@ export interface StoryboardCreationInput {
   readonly aspectRatio?: string;
   readonly granularity?: string;
   readonly maxShots?: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface InteractiveFilmCreationInput {
@@ -40,7 +40,7 @@ export interface InteractiveFilmCreationInput {
   readonly episodeDuration?: string;
   readonly budget?: string;
   readonly referenceMode?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export class ScriptCreationAgent extends BaseAgent {
@@ -98,35 +98,33 @@ export class InteractiveFilmCreationAgent extends BaseAgent {
 }
 
 export function renderScriptSpec(input: ScriptCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
-    return [
-      `# ${input.title} Script Creation Spec`,
-      "",
-      "## Goal",
-      `- Deliverable: ${formatScriptTarget(input.targetFormat, "en")}`,
-      input.episodeCount
-        ? `- Episode/segment count: ${input.episodeCount}`
-        : "- Episode/segment count: unspecified; judge from the source material and user requirements",
-      input.episodeDuration
-        ? `- Per-episode/segment duration: ${input.episodeDuration}`
-        : "- Per-episode/segment duration: unspecified",
-      input.sourceKind
-        ? `- Source material: ${input.sourceKind}`
-        : "- Source material: user input / conversation brief",
-      "",
-      "## User Requirements",
-      input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
-      "",
-      "## Adaptation Boundaries",
-      "- Preserve the characters, relationships, conflicts, key events, and taboos the user explicitly specified.",
-      "- Never decide adaptation intensity (\"faithful adaptation / commercial punch-up / low-budget shoot\") on the user's behalf; execute only the spec the user has confirmed.",
-      "- If the source material is a novel, convert interiority into playable action, dialogue, evidence, objects, or on-screen consequences.",
-      "- If the target is a short drama, every episode needs visible conflict and an end-of-episode reason to keep watching.",
-      "",
-      "## Source Material Summary",
-      summarizeSourceForSpec(input.sourceText, "en"),
-    ].join("\n");
-  }
+  if ((input.language ?? "zh") !== "zh") { return [
+    `# ${input.title} Script Creation Spec`,
+    "",
+    "## Goal",
+    `- Deliverable: ${formatScriptTarget(input.targetFormat, "en")}`,
+    input.episodeCount
+      ? `- Episode/segment count: ${input.episodeCount}`
+      : "- Episode/segment count: unspecified; judge from the source material and user requirements",
+    input.episodeDuration
+      ? `- Per-episode/segment duration: ${input.episodeDuration}`
+      : "- Per-episode/segment duration: unspecified",
+    input.sourceKind
+      ? `- Source material: ${input.sourceKind}`
+      : "- Source material: user input / conversation brief",
+    "",
+    "## User Requirements",
+    input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
+    "",
+    "## Adaptation Boundaries",
+    "- Preserve the characters, relationships, conflicts, key events, and taboos the user explicitly specified.",
+    "- Never decide adaptation intensity (\"faithful adaptation / commercial punch-up / low-budget shoot\") on the user's behalf; execute only the spec the user has confirmed.",
+    "- If the source material is a novel, convert interiority into playable action, dialogue, evidence, objects, or on-screen consequences.",
+    "- If the target is a short drama, every episode needs visible conflict and an end-of-episode reason to keep watching.",
+    "",
+    "## Source Material Summary",
+    summarizeSourceForSpec(input.sourceText, "en"),
+  ].join("\n"); }
   return [
     `# ${input.title} 剧本创作规格`,
     "",
@@ -151,32 +149,30 @@ export function renderScriptSpec(input: ScriptCreationInput): string {
 }
 
 export function renderStoryboardSpec(input: StoryboardCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
-    return [
-      `# ${input.title} Storyboard Creation Spec`,
-      "",
-      "## Goal",
-      `- Shot granularity: ${input.granularity?.trim() || "split by scene and key shots"}`,
-      `- Aspect ratio: ${input.aspectRatio?.trim() || "unspecified; default to what the user's material and target imply"}`,
-      `- Visual style: ${input.visualStyle?.trim() || "unspecified; judge from the user's material and target platform"}`,
-      input.maxShots ? `- Shot cap: ${input.maxShots}` : "- Shot cap: unspecified",
-      input.sourceKind
-        ? `- Source material: ${input.sourceKind}`
-        : "- Source material: user input / conversation brief",
-      "",
-      "## User Requirements",
-      input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
-      "",
-      "## Storyboard Boundaries",
-      "- A storyboard is a creative tool, not a locked-in shooting plan; the output must stay easy to discuss, extend, trim, and re-shoot.",
-      "- Each shot carries only what the frame can show, an actor can play, and a camera can express.",
-      "- Image prompts serve image generation: subject, action, shot size, setting, lighting, mood, and key props must be explicit.",
-      "- Follow only the art style, format, composition, and visual constraints the user has confirmed; never turn unstated preferences into default hard constraints.",
-      "",
-      "## Source Material Summary",
-      summarizeSourceForSpec(input.sourceText, "en"),
-    ].join("\n");
-  }
+  if ((input.language ?? "zh") !== "zh") { return [
+    `# ${input.title} Storyboard Creation Spec`,
+    "",
+    "## Goal",
+    `- Shot granularity: ${input.granularity?.trim() || "split by scene and key shots"}`,
+    `- Aspect ratio: ${input.aspectRatio?.trim() || "unspecified; default to what the user's material and target imply"}`,
+    `- Visual style: ${input.visualStyle?.trim() || "unspecified; judge from the user's material and target platform"}`,
+    input.maxShots ? `- Shot cap: ${input.maxShots}` : "- Shot cap: unspecified",
+    input.sourceKind
+      ? `- Source material: ${input.sourceKind}`
+      : "- Source material: user input / conversation brief",
+    "",
+    "## User Requirements",
+    input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
+    "",
+    "## Storyboard Boundaries",
+    "- A storyboard is a creative tool, not a locked-in shooting plan; the output must stay easy to discuss, extend, trim, and re-shoot.",
+    "- Each shot carries only what the frame can show, an actor can play, and a camera can express.",
+    "- Image prompts serve image generation: subject, action, shot size, setting, lighting, mood, and key props must be explicit.",
+    "- Follow only the art style, format, composition, and visual constraints the user has confirmed; never turn unstated preferences into default hard constraints.",
+    "",
+    "## Source Material Summary",
+    summarizeSourceForSpec(input.sourceText, "en"),
+  ].join("\n"); }
   return [
     `# ${input.title} 分镜创作规格`,
     "",
@@ -202,41 +198,39 @@ export function renderStoryboardSpec(input: StoryboardCreationInput): string {
 }
 
 export function renderInteractiveFilmSpec(input: InteractiveFilmCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
-    return [
-      `# ${input.title} Interactive Film Creation Spec`,
-      "",
-      "## Goal",
-      "- Deliverable: interactive film / interactive narrative game / film-game script",
-      input.episodeCount
-        ? `- Story segments/episodes: ${input.episodeCount}`
-        : "- Story segments/episodes: unspecified; judge from the source material and user requirements",
-      input.episodeDuration
-        ? `- Per-segment/episode duration: ${input.episodeDuration}`
-        : "- Per-segment/episode duration: unspecified",
-      input.budget ? `- Budget constraint: ${input.budget}` : "- Budget constraint: unspecified",
-      input.targetAudience ? `- Target audience: ${input.targetAudience}` : "- Target audience: unspecified",
-      input.referenceMode
-        ? `- Reference mode: ${input.referenceMode}`
-        : "- Reference mode: unspecified by the user; do not impose a fixed game template",
-      input.sourceKind
-        ? `- Source material: ${input.sourceKind}`
-        : "- Source material: user input / conversation brief",
-      "",
-      "## User Requirements",
-      input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
-      "",
-      "## Interactive Film Boundaries",
-      "- This is a creative deliverable, not a hard-numbers RPG engine design; variables, flags, relationships, and ending conditions must serve story branching.",
-      "- It must include branching storylines, key player choices, how variables/flags change later plot, and the conditions for reaching each of the multiple endings.",
-      "- Describe the variable system in natural language: states, relationships, secret/public status, evidence, items, identities, affinity/trust, and the like; never force fixed numeric stats or equipment tiers.",
-      "- The deliverable must fit interactive film/drama production: a clear story tree, shootable nodes, playable dialogue, drawable storyboards, and image prompts usable for asset generation.",
-      "- Never decide subject matter, budget, art style, or commercial punch-up intensity on the user's behalf; mark anything unspecified as adjustable.",
-      "",
-      "## Source Material Summary",
-      summarizeSourceForSpec(input.sourceText, "en"),
-    ].join("\n");
-  }
+  if ((input.language ?? "zh") !== "zh") { return [
+    `# ${input.title} Interactive Film Creation Spec`,
+    "",
+    "## Goal",
+    "- Deliverable: interactive film / interactive narrative game / film-game script",
+    input.episodeCount
+      ? `- Story segments/episodes: ${input.episodeCount}`
+      : "- Story segments/episodes: unspecified; judge from the source material and user requirements",
+    input.episodeDuration
+      ? `- Per-segment/episode duration: ${input.episodeDuration}`
+      : "- Per-segment/episode duration: unspecified",
+    input.budget ? `- Budget constraint: ${input.budget}` : "- Budget constraint: unspecified",
+    input.targetAudience ? `- Target audience: ${input.targetAudience}` : "- Target audience: unspecified",
+    input.referenceMode
+      ? `- Reference mode: ${input.referenceMode}`
+      : "- Reference mode: unspecified by the user; do not impose a fixed game template",
+    input.sourceKind
+      ? `- Source material: ${input.sourceKind}`
+      : "- Source material: user input / conversation brief",
+    "",
+    "## User Requirements",
+    input.requirements?.trim() || "Not separately specified; follow the instruction the user confirmed.",
+    "",
+    "## Interactive Film Boundaries",
+    "- This is a creative deliverable, not a hard-numbers RPG engine design; variables, flags, relationships, and ending conditions must serve story branching.",
+    "- It must include branching storylines, key player choices, how variables/flags change later plot, and the conditions for reaching each of the multiple endings.",
+    "- Describe the variable system in natural language: states, relationships, secret/public status, evidence, items, identities, affinity/trust, and the like; never force fixed numeric stats or equipment tiers.",
+    "- The deliverable must fit interactive film/drama production: a clear story tree, shootable nodes, playable dialogue, drawable storyboards, and image prompts usable for asset generation.",
+    "- Never decide subject matter, budget, art style, or commercial punch-up intensity on the user's behalf; mark anything unspecified as adjustable.",
+    "",
+    "## Source Material Summary",
+    summarizeSourceForSpec(input.sourceText, "en"),
+  ].join("\n"); }
   return [
     `# ${input.title} 互动影游创作规格`,
     "",
@@ -333,17 +327,15 @@ export function normalizeScriptEpisodeEndLabels(script: string): string {
   }).join("\n");
 }
 
-function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "You are a script-creation tool, not a novel-continuation engine.",
-      "Your job is to adapt a novel, concept, outline, or existing text into a script that production can keep working from, following the spec the user has confirmed.",
-      "Never decide adaptation intensity on the user's behalf; execute only the goals, format, boundaries, and constraints already confirmed in the spec.",
-      "Action lines carry only what the audience can see, an actor can play, and a camera can shoot; convert interiority into behavior, dialogue, objects, evidence, or on-screen consequences.",
-      "Dialogue must serve conflict, relationships, information flow, or emotional shifts; no hollow exposition.",
-      "Output Markdown. No process notes, no model self-narration, no \"Here is\" preamble.",
-    ].join("\n");
-  }
+function buildScriptCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "You are a script-creation tool, not a novel-continuation engine.",
+    "Your job is to adapt a novel, concept, outline, or existing text into a script that production can keep working from, following the spec the user has confirmed.",
+    "Never decide adaptation intensity on the user's behalf; execute only the goals, format, boundaries, and constraints already confirmed in the spec.",
+    "Action lines carry only what the audience can see, an actor can play, and a camera can shoot; convert interiority into behavior, dialogue, objects, evidence, or on-screen consequences.",
+    "Dialogue must serve conflict, relationships, information flow, or emotional shifts; no hollow exposition.",
+    "Output Markdown. No process notes, no model self-narration, no \"Here is\" preamble.",
+  ].join("\n"); }
   return [
     "你是剧本创作工具，不是小说续写器。",
     "你的任务是根据用户确认过的规格，把小说、创意、大纲或已有文本改成可继续制作的剧本。",
@@ -354,24 +346,22 @@ function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
   ].join("\n");
 }
 
-function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "## Creation Spec",
-      renderScriptSpec(input),
-      "",
-      "## Full Source Material",
-      input.sourceText?.trim()
-        || "The user did not provide full source material; write an extensible script draft strictly from the creation spec and user requirements.",
-      "",
-      "## Output Format",
-      `# ${input.title}`,
-      "",
-      "## Script",
-      "",
-      "Follow the target format. Vertical short drama: \"Episode N / scene slug / characters / action / dialogue / end-of-episode hook\". Standard screenplay: \"scene heading / action / character / dialogue\".",
-    ].join("\n");
-  }
+function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "## Creation Spec",
+    renderScriptSpec(input),
+    "",
+    "## Full Source Material",
+    input.sourceText?.trim()
+      || "The user did not provide full source material; write an extensible script draft strictly from the creation spec and user requirements.",
+    "",
+    "## Output Format",
+    `# ${input.title}`,
+    "",
+    "## Script",
+    "",
+    "Follow the target format. Vertical short drama: \"Episode N / scene slug / characters / action / dialogue / end-of-episode hook\". Standard screenplay: \"scene heading / action / character / dialogue\".",
+  ].join("\n"); }
   return [
     "## 创作规格",
     renderScriptSpec(input),
@@ -388,16 +378,14 @@ function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh
   ].join("\n");
 }
 
-function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "You are a storyboard-creation tool: you break a script, novel excerpt, or concept into shots that can be filmed, drawn, and fed to image generation.",
-      "A storyboard is not a plot summary; every shot needs a visual, character placement, action, shot size, or a visual focus.",
-      "Keep the visual spec the user has confirmed; never promote visual constraints the user did not confirm into default requirements.",
-      "Image prompts must be generation-ready: subject, action, setting, lighting, composition, mood, and key props all explicit.",
-      "Output Markdown. No model self-narration or process explanation.",
-    ].join("\n");
-  }
+function buildStoryboardCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "You are a storyboard-creation tool: you break a script, novel excerpt, or concept into shots that can be filmed, drawn, and fed to image generation.",
+    "A storyboard is not a plot summary; every shot needs a visual, character placement, action, shot size, or a visual focus.",
+    "Keep the visual spec the user has confirmed; never promote visual constraints the user did not confirm into default requirements.",
+    "Image prompts must be generation-ready: subject, action, setting, lighting, composition, mood, and key props all explicit.",
+    "Output Markdown. No model self-narration or process explanation.",
+  ].join("\n"); }
   return [
     "你是分镜创作工具，负责把剧本、小说片段或创意拆成可拍、可画、可生图的分镜。",
     "分镜不是剧情摘要；每个镜头都要有画面、角色位置、动作、景别或视觉重点。",
@@ -407,29 +395,27 @@ function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): stri
   ].join("\n");
 }
 
-function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" = "zh"): string {
+function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
   const maxShots = input.maxShots ?? 24;
-  if (language === "en") {
-    return [
-      "## Storyboard Spec",
-      renderStoryboardSpec(input),
-      "",
-      "## Full Source Material",
-      input.sourceText?.trim()
-        || "The user did not provide full source material; write an extensible storyboard draft strictly from the storyboard spec and user requirements.",
-      "",
-      "## Output Format",
-      `# ${input.title} Storyboard`,
-      "",
-      "## Storyboard",
-      "",
-      `Output at most ${maxShots} shots. Each shot includes: shot number, visual, characters/objects, action, shot size/camera, dialogue/captions, suggested duration, notes.`,
-      "",
-      "## Image Prompts",
-      "",
-      "Write one generation-ready image prompt per shot. Each prompt MUST be its own `Prompt: ...` line; never merge it into the storyboard body, table headers, or explanations. Include only the visual constraints the user has confirmed.",
-    ].join("\n");
-  }
+  if (language !== "zh") { return [
+    "## Storyboard Spec",
+    renderStoryboardSpec(input),
+    "",
+    "## Full Source Material",
+    input.sourceText?.trim()
+      || "The user did not provide full source material; write an extensible storyboard draft strictly from the storyboard spec and user requirements.",
+    "",
+    "## Output Format",
+    `# ${input.title} Storyboard`,
+    "",
+    "## Storyboard",
+    "",
+    `Output at most ${maxShots} shots. Each shot includes: shot number, visual, characters/objects, action, shot size/camera, dialogue/captions, suggested duration, notes.`,
+    "",
+    "## Image Prompts",
+    "",
+    "Write one generation-ready image prompt per shot. Each prompt MUST be its own `Prompt: ...` line; never merge it into the storyboard body, table headers, or explanations. Include only the visual constraints the user has confirmed.",
+  ].join("\n"); }
   return [
     "## 分镜规格",
     renderStoryboardSpec(input),
@@ -450,16 +436,14 @@ function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, langu
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "You are an interactive-film creation tool: you turn a concept, novel, script, or user brief into an interactive-film deliverable that production can build from.",
-      "An interactive film is not an ordinary script: it must have a story tree, key player choices, variables/flags, relationship/evidence/item states, and the conditions for reaching each of the multiple endings.",
-      "The variable system exists only to drive plot progression and branch unlocking; no default RPG stats, combat formulas, or equipment tiers. Write such rules only when the user explicitly asks for them.",
-      "Output must be Markdown with the specified sections. No model self-narration, process notes, or \"Here is\" preamble.",
-      "Every storyboard image prompt must be its own standalone `Prompt: ...` line so downstream asset management can pick it up; include only the visual constraints the user has confirmed.",
-    ].join("\n");
-  }
+function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "You are an interactive-film creation tool: you turn a concept, novel, script, or user brief into an interactive-film deliverable that production can build from.",
+    "An interactive film is not an ordinary script: it must have a story tree, key player choices, variables/flags, relationship/evidence/item states, and the conditions for reaching each of the multiple endings.",
+    "The variable system exists only to drive plot progression and branch unlocking; no default RPG stats, combat formulas, or equipment tiers. Write such rules only when the user explicitly asks for them.",
+    "Output must be Markdown with the specified sections. No model self-narration, process notes, or \"Here is\" preamble.",
+    "Every storyboard image prompt must be its own standalone `Prompt: ...` line so downstream asset management can pick it up; include only the visual constraints the user has confirmed.",
+  ].join("\n"); }
   return [
     "你是互动影游创作工具，负责把创意、小说、剧本或用户需求整理成可制作的互动影游交付稿。",
     "互动影游不是普通剧本：必须有剧情树、关键选择、变量/旗标、关系/证据/物品状态、多结局达成条件。",
@@ -469,35 +453,33 @@ function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"):
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "## Interactive Film Spec",
-      renderInteractiveFilmSpec(input),
-      "",
-      "## Full Source Material",
-      input.sourceText?.trim()
-        || "The user did not provide full source material; write an extensible interactive-film deliverable strictly from the creation spec and user requirements.",
-      "",
-      "## Output Format",
-      `# ${input.title} Interactive Film Package`,
-      "",
-      "## Story Tree",
-      "Lay out main-line nodes, branch nodes, key choices, and merge/no-return relationships as Markdown. The multi-ending structure must be visible at a glance.",
-      "",
-      "## Variables and Flags",
-      "List each variable/flag: name, meaning, trigger, scope of impact, and related nodes. Variables may be relationships, states, evidence, items, identities, secret/public status, ending gates, and so on.",
-      "",
-      "## Ending Paths",
-      "For every ending: its unlock conditions, the key choice chain, the required variables/flags, plus any failure or hidden-ending conditions.",
-      "",
-      "## Interactive Script",
-      "Write a playable script per node: scene, characters, action, dialogue, player choices, variable changes, and branch destinations. Never write summaries only.",
-      "",
-      "## Storyboard and Image Prompts",
-      "List the key shots. Each shot includes visual, characters/objects, action, shot size, and suggested duration. After each shot, add exactly one standalone `Prompt: ...` line.",
-    ].join("\n");
-  }
+function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "## Interactive Film Spec",
+    renderInteractiveFilmSpec(input),
+    "",
+    "## Full Source Material",
+    input.sourceText?.trim()
+      || "The user did not provide full source material; write an extensible interactive-film deliverable strictly from the creation spec and user requirements.",
+    "",
+    "## Output Format",
+    `# ${input.title} Interactive Film Package`,
+    "",
+    "## Story Tree",
+    "Lay out main-line nodes, branch nodes, key choices, and merge/no-return relationships as Markdown. The multi-ending structure must be visible at a glance.",
+    "",
+    "## Variables and Flags",
+    "List each variable/flag: name, meaning, trigger, scope of impact, and related nodes. Variables may be relationships, states, evidence, items, identities, secret/public status, ending gates, and so on.",
+    "",
+    "## Ending Paths",
+    "For every ending: its unlock conditions, the key choice chain, the required variables/flags, plus any failure or hidden-ending conditions.",
+    "",
+    "## Interactive Script",
+    "Write a playable script per node: scene, characters, action, dialogue, player choices, variable changes, and branch destinations. Never write summaries only.",
+    "",
+    "## Storyboard and Image Prompts",
+    "List the key shots. Each shot includes visual, characters/objects, action, shot size, and suggested duration. After each shot, add exactly one standalone `Prompt: ...` line.",
+  ].join("\n"); }
   return [
     "## 互动影游规格",
     renderInteractiveFilmSpec(input),
@@ -525,22 +507,20 @@ function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationIn
   ].join("\n");
 }
 
-function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    switch (value) {
-      case "vertical_short_drama":
-        return "vertical short drama";
-      case "screenplay":
-        return "standard screenplay";
-      case "audio_drama":
-        return "audio drama";
-      case "interactive_script":
-        return "interactive script";
-      case "general_script":
-      default:
-        return "general script";
-    }
-  }
+function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { switch (value) {
+    case "vertical_short_drama":
+      return "vertical short drama";
+    case "screenplay":
+      return "standard screenplay";
+    case "audio_drama":
+      return "audio drama";
+    case "interactive_script":
+      return "interactive script";
+    case "general_script":
+    default:
+      return "general script";
+  } }
   switch (value) {
     case "vertical_short_drama":
       return "竖屏短剧";
@@ -556,12 +536,10 @@ function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh
   }
 }
 
-function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" = "zh"): string {
+function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" | "vi" = "zh"): string {
   const text = sourceText?.replace(/\s+/g, " ").trim();
-  if (language === "en") {
-    if (!text) return "No full source material provided.";
-    return `Full source material provided, about ${text.length} characters; the full content will be read during generation.`;
-  }
+  if (language !== "zh") { if (!text) return "No full source material provided.";
+  return `Full source material provided, about ${text.length} characters; the full content will be read during generation.`; }
   if (!text) return "未提供完整源素材。";
   return `已提供完整源素材，约 ${text.length} 字符；生成时会读取完整内容。`;
 }
