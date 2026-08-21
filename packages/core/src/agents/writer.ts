@@ -128,15 +128,15 @@ export class WriterAgent extends BaseAgent {
     return "writer";
   }
 
-  private localize(language: "zh" | "en", messages: { zh: string; en: string }): string {
-    return language === "en" ? messages.en : messages.zh;
+  private localize(language: "zh" | "en" | "vi", messages: { zh: string; en: string }): string {
+    return language === "zh" ? messages.zh : messages.en;
   }
 
-  private logInfo(language: "zh" | "en", messages: { zh: string; en: string }): void {
+  private logInfo(language: "zh" | "en" | "vi", messages: { zh: string; en: string }): void {
     this.ctx.logger?.info(this.localize(language, messages));
   }
 
-  private logWarn(language: "zh" | "en", messages: { zh: string; en: string }): void {
+  private logWarn(language: "zh" | "en" | "vi", messages: { zh: string; en: string }): void {
     this.ctx.logger?.warn(this.localize(language, messages));
   }
 
@@ -185,12 +185,10 @@ export class WriterAgent extends BaseAgent {
       throw new Error("Writer requires governed chapter intent, memo, context package, and rule stack.");
     }
     const governedMemoryBlocks = buildGovernedMemoryEvidenceBlocks(input.contextPackage, resolvedLanguage);
-    const englishVarianceBrief = resolvedLanguage === "en"
-      ? await buildEnglishVarianceBrief({
+    const englishVarianceBrief = resolvedLanguage === "zh" ? null : await buildEnglishVarianceBrief({
           bookDir,
           chapterNumber,
-        })
-      : null;
+        });
 
     // Build fanfic context if fanfic_canon.md exists
     const fanficContext: FanficContext | undefined = hasFanficCanon && bookRules?.fanficMode
@@ -469,7 +467,7 @@ export class WriterAgent extends BaseAgent {
       content: input.content,
       wordCount: countChapterLength(
         input.content,
-        resolvedLanguage === "en" ? "en_words" : "zh_chars",
+        resolvedLanguage === "zh" ? "zh_chars" : "en_words",
       ),
       preWriteCheck: "",
       postSettlement: settlement.postSettlement,
@@ -629,7 +627,7 @@ export class WriterAgent extends BaseAgent {
     bookDir: string,
     output: WriteChapterOutput,
     numericalSystem: boolean = true,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
   ): Promise<void> {
     const chaptersDir = join(bookDir, "chapters");
     await mkdir(chaptersDir, { recursive: true });
@@ -640,9 +638,7 @@ export class WriterAgent extends BaseAgent {
     const supersededChapterFiles = existingChapterFiles
       .filter((file) => file.startsWith(`${paddedNum}_`) && file.endsWith(".md") && file !== filename);
 
-    const heading = language === "en"
-      ? `# Chapter ${output.chapterNumber}: ${output.title}`
-      : `# 第${output.chapterNumber}章 ${output.title}`;
+    const heading = language === "zh" ? `# 第${output.chapterNumber}章 ${output.title}` : language === "vi" ? `# Chương ${output.chapterNumber}: ${output.title}` : `# Chapter ${output.chapterNumber}: ${output.title}`;
     const chapterContent = [
       heading,
       "",
@@ -730,7 +726,7 @@ export class WriterAgent extends BaseAgent {
     readonly ruleStack: RuleStack;
     readonly externalContext?: string;
     readonly lengthSpec: LengthSpec;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
     readonly varianceBrief?: string;
     readonly selectedEvidenceBlock?: string;
   }): string {
@@ -747,9 +743,7 @@ export class WriterAgent extends BaseAgent {
     );
     const contextSections = renderNarrativeSelectedContext(otherEntries, language);
     const userDirectionBlock = directionEntries.length > 0
-      ? (language === "en"
-          ? `## User direction (overrides model defaults — must follow)\n${renderNarrativeSelectedContext(directionEntries, language)}\n`
-          : `## 用户方向（优先于模型默认，必须遵循）\n${renderNarrativeSelectedContext(directionEntries, language)}\n`)
+      ? (language === "zh" ? `## 用户方向（优先于模型默认，必须遵循）\n${renderNarrativeSelectedContext(directionEntries, language)}\n` : `## User direction (overrides model defaults — must follow)\n${renderNarrativeSelectedContext(directionEntries, language)}\n`)
       : "";
 
     const diagnosticLines = params.ruleStack.sections.diagnostic.length > 0
@@ -766,28 +760,26 @@ export class WriterAgent extends BaseAgent {
     const chapterContextBlock = this.buildChapterContextBlock(params.externalContext, language);
     const briefNarrative = renderMemoAsNarrativeBlock(params.chapterMemo, params.chapterIntentData, language);
 
-    if (params.language === "en") {
-      return `Write chapter ${params.chapterNumber}.
+    if (params.language !== "zh") { return `Write chapter ${params.chapterNumber}.
 
-${chapterContextBlock}
+    ${chapterContextBlock}
 
-${userDirectionBlock}
-${briefNarrative}
+    ${userDirectionBlock}
+    ${briefNarrative}
 
-## Selected Context
-${contextSections || "(none)"}
-${selectedEvidenceBlock}
+    ## Selected Context
+    ${contextSections || "(none)"}
+    ${selectedEvidenceBlock}
 
-## Rule Stack
-- Hard: ${params.ruleStack.sections.hard.join(", ") || "(none)"}
-- Soft: ${params.ruleStack.sections.soft.join(", ") || "(none)"}
-- Diagnostic: ${diagnosticLines}
+    ## Rule Stack
+    - Hard: ${params.ruleStack.sections.hard.join(", ") || "(none)"}
+    - Soft: ${params.ruleStack.sections.soft.join(", ") || "(none)"}
+    - Diagnostic: ${diagnosticLines}
 
-${varianceBlock}
-${lengthRequirementBlock}
-- Output PRE_WRITE_CHECK first, then the chapter
-- Output only PRE_WRITE_CHECK, CHAPTER_TITLE, and CHAPTER_CONTENT blocks`;
-    }
+    ${varianceBlock}
+    ${lengthRequirementBlock}
+    - Output PRE_WRITE_CHECK first, then the chapter
+    - Output only PRE_WRITE_CHECK, CHAPTER_TITLE, and CHAPTER_CONTENT blocks`; }
 
     return `请续写第${params.chapterNumber}章。
 
@@ -811,15 +803,13 @@ ${lengthRequirementBlock}
 - 只需输出 PRE_WRITE_CHECK、CHAPTER_TITLE、CHAPTER_CONTENT 三个区块`;
   }
 
-  private buildChapterContextBlock(externalContext: string | undefined, language: "zh" | "en"): string {
+  private buildChapterContextBlock(externalContext: string | undefined, language: "zh" | "en" | "vi"): string {
     const trimmed = externalContext?.trim();
     if (!trimmed) return "";
-    if (language === "en") {
-      return `## Per-chapter user instruction (highest priority)
-${trimmed}
+    if (language !== "zh") { return `## Per-chapter user instruction (highest priority)
+    ${trimmed}
 
-Obey this direct instruction for the current chapter. If it specifies a chapter title, use that title exactly in CHAPTER_TITLE. Keep continuity, but do not replace this instruction with the outline fallback.`;
-    }
+    Obey this direct instruction for the current chapter. If it specifies a chapter title, use that title exactly in CHAPTER_TITLE. Keep continuity, but do not replace this instruction with the outline fallback.`; }
     return `## 本章用户指令（最高优先级）
 ${trimmed}
 
@@ -850,7 +840,7 @@ ${trimmed}
     chapterIntent: string,
     contextPackage: ContextPackage,
     ruleStack: RuleStack,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
     const selectedContext = renderNarrativeSelectedContext(contextPackage.selectedContext, language)
       .replace(/^### /gm, "- ");
@@ -861,21 +851,19 @@ ${trimmed}
       : "- none";
     const narrativeIntent = buildNarrativeIntentBrief(chapterIntent, language);
 
-    if (language === "en") {
-      return `\n## Chapter Control Inputs
-${narrativeIntent || "(none)"}
+    if (language !== "zh") { return `\n## Chapter Control Inputs
+    ${narrativeIntent || "(none)"}
 
-### Selected Context
-${selectedContext || "- none"}
+    ### Selected Context
+    ${selectedContext || "- none"}
 
-### Rule Stack
-- Hard guardrails: ${ruleStack.sections.hard.join(", ") || "(none)"}
-- Soft constraints: ${ruleStack.sections.soft.join(", ") || "(none)"}
-- Diagnostic rules: ${ruleStack.sections.diagnostic.join(", ") || "(none)"}
+    ### Rule Stack
+    - Hard guardrails: ${ruleStack.sections.hard.join(", ") || "(none)"}
+    - Soft constraints: ${ruleStack.sections.soft.join(", ") || "(none)"}
+    - Diagnostic rules: ${ruleStack.sections.diagnostic.join(", ") || "(none)"}
 
-### Active Overrides
-${overrides}\n`;
-    }
+    ### Active Overrides
+    ${overrides}\n`; }
 
     return `\n## 本章控制输入
 ${narrativeIntent || "(无)"}
@@ -903,7 +891,7 @@ ${overrides}\n`;
   private verifyPreWriteCheckAlignsWithMemo(
     preWriteCheck: string,
     chapterNumber: number,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): void {
     if (!preWriteCheck || preWriteCheck.trim().length === 0) {
       this.logWarn(language, {
@@ -913,17 +901,15 @@ ${overrides}\n`;
       return;
     }
 
-    const required = language === "en"
-      ? [
-          { needle: "Current task", label: "Current task" },
-          { needle: "Do not", label: "Do not" },
-          { needle: "end-of-chapter", label: "Required end-of-chapter change" },
-        ]
-      : [
-          { needle: "当前任务", label: "当前任务" },
-          { needle: "不要做", label: "不要做" },
-          { needle: "章尾", label: "章尾必须发生的改变" },
-        ];
+    const required = language === "zh" ? [
+        { needle: "当前任务", label: "当前任务" },
+        { needle: "不要做", label: "不要做" },
+        { needle: "章尾", label: "章尾必须发生的改变" },
+      ] : [
+        { needle: "Current task", label: "Current task" },
+        { needle: "Do not", label: "Do not" },
+        { needle: "end-of-chapter", label: "Required end-of-chapter change" },
+      ];
     const missing = required.filter((r) => !preWriteCheck.includes(r.needle)).map((r) => r.label);
 
     if (missing.length > 0) {
@@ -934,12 +920,10 @@ ${overrides}\n`;
     }
   }
 
-  private buildLengthRequirementBlock(lengthSpec: LengthSpec, language: "zh" | "en"): string {
-    if (language === "en") {
-      return `Requirements:
-- Target length: ${lengthSpec.target} words
-- Acceptable range: ${lengthSpec.softMin}-${lengthSpec.softMax} words`;
-    }
+  private buildLengthRequirementBlock(lengthSpec: LengthSpec, language: "zh" | "en" | "vi"): string {
+    if (language !== "zh") { return `Requirements:
+    - Target length: ${lengthSpec.target} words
+    - Acceptable range: ${lengthSpec.softMin}-${lengthSpec.softMax} words`; }
 
     return `要求：
 - 目标字数：${lengthSpec.target}字
@@ -1061,7 +1045,7 @@ ${overrides}\n`;
   private async buildRuntimeStateArtifactsIfPresent(
     bookDir: string,
     delta: RuntimeStateDelta | undefined,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
     authoritativeChapterNumber?: number,
     allowReapply?: boolean,
     baselineChapter?: number,
@@ -1097,7 +1081,7 @@ ${overrides}\n`;
   private async resolveRuntimeStateArtifactsForOutput(
     bookDir: string,
     output: WriteChapterOutput,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): Promise<RuntimeStateArtifacts | null> {
     if (!output.runtimeStateDelta) return null;
     const safeDelta = this.normalizeRuntimeStateDeltaChapter(
@@ -1130,7 +1114,7 @@ ${overrides}\n`;
   private async renderAppendedChapterSummary(
     bookDir: string,
     summary: string,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): Promise<string | undefined> {
     const summaryPath = join(bookDir, "story", "chapter_summaries.md");
     let existing = "";
@@ -1138,9 +1122,7 @@ ${overrides}\n`;
       existing = await readFile(summaryPath, "utf-8");
     } catch {
       // File doesn't exist yet — start with header
-      existing = language === "en"
-        ? "# Chapter Summaries\n\n| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n"
-        : "# 章节摘要\n\n| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |\n|------|------|----------|----------|----------|----------|----------|----------|\n";
+      existing = language === "zh" ? "# 章节摘要\n\n| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |\n|------|------|----------|----------|----------|----------|----------|----------|\n" : "# Chapter Summaries\n\n| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n";
     }
 
     // Extract only the data row(s) from the summary (skip header lines)

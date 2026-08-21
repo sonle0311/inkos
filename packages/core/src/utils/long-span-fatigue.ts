@@ -18,7 +18,7 @@ export interface AnalyzeLongSpanFatigueInput {
   readonly chapterNumber: number;
   readonly chapterContent: string;
   readonly chapterSummary?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface EnglishVarianceBrief {
@@ -208,21 +208,19 @@ function parseSummaryRow(line: string): SummaryRow | null {
 
 function buildChapterTypeIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.scenePressure?.pressure !== "high") {
     return null;
   }
   const { repeatedType, streak } = cadence.scenePressure;
 
-  if (language === "en") {
-    return {
-      severity: "warning",
-      category: "Pacing Monotony",
-      description: `The last ${streak} chapter types have stayed on ${repeatedType}, which suggests macro pacing monotony.`,
-      suggestion: "Switch the next chapter's function instead of extending the same beat again. Rotate setup, payoff, reversal, and fallout more deliberately.",
-    };
-  }
+  if (language !== "zh") { return {
+    severity: "warning",
+    category: "Pacing Monotony",
+    description: `The last ${streak} chapter types have stayed on ${repeatedType}, which suggests macro pacing monotony.`,
+    suggestion: "Switch the next chapter's function instead of extending the same beat again. Rotate setup, payoff, reversal, and fallout more deliberately.",
+  }; }
 
   return {
     severity: "warning",
@@ -234,21 +232,19 @@ function buildChapterTypeIssue(
 
 function buildMoodIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.moodPressure?.pressure !== "high") {
     return null;
   }
   const { highTensionStreak, recentMoods } = cadence.moodPressure;
 
-  if (language === "en") {
-    return {
-      severity: "warning",
-      category: "Mood Monotony",
-      description: `High-tension mood has locked in for ${highTensionStreak} chapters (${recentMoods.join(" -> ")}), with no visible emotional release.`,
-      suggestion: "Insert a release beat, warmth, humor, intimacy, or reflective quiet before escalating again.",
-    };
-  }
+  if (language !== "zh") { return {
+    severity: "warning",
+    category: "Mood Monotony",
+    description: `High-tension mood has locked in for ${highTensionStreak} chapters (${recentMoods.join(" -> ")}), with no visible emotional release.`,
+    suggestion: "Insert a release beat, warmth, humor, intimacy, or reflective quiet before escalating again.",
+  }; }
 
   return {
     severity: "warning",
@@ -260,21 +256,19 @@ function buildMoodIssue(
 
 function buildTitleIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (cadence.titlePressure?.pressure !== "high") {
     return null;
   }
   const { repeatedToken, count } = cadence.titlePressure;
 
-  if (language === "en") {
-    return {
-      severity: "warning",
-      category: "Title Collapse",
-      description: `Recent titles keep collapsing around "${repeatedToken}" (${count} hits in the current window), which makes chapter naming feel formulaic.`,
-      suggestion: "Change the next title anchor. Use a new image, action, consequence, or character vector instead of the same keyword shell.",
-    };
-  }
+  if (language !== "zh") { return {
+    severity: "warning",
+    category: "Title Collapse",
+    description: `Recent titles keep collapsing around "${repeatedToken}" (${count} hits in the current window), which makes chapter naming feel formulaic.`,
+    suggestion: "Change the next title anchor. Use a new image, action, consequence, or character vector instead of the same keyword shell.",
+  }; }
 
   return {
     severity: "warning",
@@ -315,7 +309,7 @@ async function loadRecentChapterBodies(
 function buildSentencePatternIssue(
   chapterBodies: ReadonlyArray<string>,
   boundary: "opening" | "ending",
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): LongSpanFatigueIssue | null {
   if (chapterBodies.length < LONG_SPAN_FATIGUE_THRESHOLDS.boundaryPatternMinBodies) return null;
 
@@ -341,18 +335,16 @@ function buildSentencePatternIssue(
   const sample = summarizeSentence(sentences[2]!, language);
   const pairText = similarities.map((value) => value.toFixed(2)).join("/");
 
-  if (language === "en") {
-    const category = boundary === "opening" ? "Opening Pattern Repetition" : "Ending Pattern Repetition";
-    const position = boundary === "opening" ? "openings" : "endings";
-    return {
-      severity: "warning",
-      category,
-      description: `The last 3 chapter ${position} are highly similar (adjacent similarity ${pairText}), which risks a formulaic rhythm. Current ${boundary} signature: "${sample}".`,
-      suggestion: boundary === "opening"
-        ? "Change the next chapter opening vector. Start from action, consequence, or surprise instead of repeating the same camera move."
-        : "Change the next chapter landing pattern. End on consequence, decision, or a new variable instead of repeating the same explanatory cadence.",
-    };
-  }
+  if (language !== "zh") { const category = boundary === "opening" ? "Opening Pattern Repetition" : "Ending Pattern Repetition";
+  const position = boundary === "opening" ? "openings" : "endings";
+  return {
+    severity: "warning",
+    category,
+    description: `The last 3 chapter ${position} are highly similar (adjacent similarity ${pairText}), which risks a formulaic rhythm. Current ${boundary} signature: "${sample}".`,
+    suggestion: boundary === "opening"
+      ? "Change the next chapter opening vector. Start from action, consequence, or surprise instead of repeating the same camera move."
+      : "Change the next chapter landing pattern. End on consequence, decision, or a new variable instead of repeating the same explanatory cadence.",
+  }; }
 
   return {
     severity: "warning",
@@ -458,30 +450,26 @@ function extractBoundarySentence(content: string, boundary: "opening" | "ending"
   return boundary === "opening" ? sentences[0]! : sentences[sentences.length - 1]!;
 }
 
-function normalizeSentence(sentence: string, language: "zh" | "en"): string {
-  if (language === "en") {
-    return sentence
-      .toLowerCase()
-      .replace(ENGLISH_PUNCTUATION, "")
-      .trim();
-  }
+function normalizeSentence(sentence: string, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return sentence
+    .toLowerCase()
+    .replace(ENGLISH_PUNCTUATION, "")
+    .trim(); }
 
   return sentence
     .replace(CHINESE_PUNCTUATION, "")
     .toLowerCase();
 }
 
-function summarizeSentence(sentence: string, language: "zh" | "en"): string {
-  if (language === "en") {
-    const words = sentence
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]+/gi, " ")
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 6)
-      .join(" ");
-    return words.length > 0 ? words : sentence.slice(0, 32);
-  }
+function summarizeSentence(sentence: string, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { const words = sentence
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/gi, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 6)
+    .join(" ");
+  return words.length > 0 ? words : sentence.slice(0, 32); }
 
   const collapsed = sentence.replace(CHINESE_PUNCTUATION, "");
   return collapsed.slice(0, 12);

@@ -22,6 +22,13 @@ describe("service-groups i18n", () => {
     expect(getGroupShortLabel("aggregator")).toBe("Aggregator");
     expect(getGroupDescription("aggregator")).toContain("one API key");
   });
+
+  it("chuyển sang vi trả về nhãn tiếng Việt", () => {
+    setAppLanguage("vi");
+    expect(getGroupLabel("overseas")).toBe("Nhà cung cấp quốc tế");
+    expect(getGroupShortLabel("aggregator")).toBe("Tổng hợp");
+    expect(getGroupDescription("aggregator")).toContain("một API key");
+  });
 });
 
 describe("service quick links i18n", () => {

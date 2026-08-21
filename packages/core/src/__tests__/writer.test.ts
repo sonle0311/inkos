@@ -146,7 +146,7 @@ describe("WriterAgent", () => {
           readonly activeOverrides: readonly [];
         };
         readonly lengthSpec: ReturnType<typeof buildLengthSpec>;
-        readonly language?: "zh" | "en";
+        readonly language?: "zh" | "en" | "vi";
         readonly externalContext?: string;
       }): string;
     }).buildGovernedUserPrompt({

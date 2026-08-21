@@ -30,9 +30,9 @@ const EN_RHETORICAL_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re
 export function analyzeStyle(
   text: string,
   sourceName?: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): StyleProfile {
-  const isEn = language === "en";
+  const isEn = language !== "zh"
 
   const sentences = text
     .split(isEn ? /[.!?\n]+/ : /[。！？\n]/)

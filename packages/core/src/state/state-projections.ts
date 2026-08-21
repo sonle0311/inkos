@@ -14,23 +14,21 @@ import {
 
 export function renderHooksProjection(
   state: HooksState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
   options?: { readonly currentChapter?: number },
 ): string {
-  const title = language === "en" ? "# Pending Hooks" : "# 伏笔池";
+  const title = language === "zh" ? "# 伏笔池" : "# Pending Hooks";
   // Phase 7 + hotfixes 1 & 2: depends_on / pays_off_in_arc / core_hook / half_life / promoted
   // are visible columns, so writer and reviewer both see the causal chain, planned payoff arc,
   // stale threshold, and promotion flag. stale / blocked diagnostic flags are appended to the
   // status cell.
-  const headers = language === "en"
-    ? [
-      "| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | payoff_timing | depends_on | pays_off_in_arc | core_hook | half_life | promoted | notes |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
-      "| hook_id | 起始章节 | 类型 | 状态 | 最近推进 | 预期回收 | 回收节奏 | 上游依赖 | 回收卷 | 核心 | 半衰期 | 升级 | 备注 |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ];
+  const headers = language === "zh" ? [
+    "| hook_id | 起始章节 | 类型 | 状态 | 最近推进 | 预期回收 | 回收节奏 | 上游依赖 | 回收卷 | 核心 | 半衰期 | 升级 | 备注 |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+  ] : [
+    "| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | payoff_timing | depends_on | pays_off_in_arc | core_hook | half_life | promoted | notes |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+  ];
 
   const currentChapter = options?.currentChapter;
   const diagnostics = typeof currentChapter === "number"
@@ -71,12 +69,12 @@ export function renderHooksProjection(
   return [title, "", ...headers, ...rows, ""].join("\n");
 }
 
-function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en"): string {
-  if (ids.length === 0) return language === "en" ? "none" : "无";
+function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en" | "vi"): string {
+  if (ids.length === 0) return language === "zh" ? "无" : "none";
   return `[${ids.join(", ")}]`;
 }
 
-function renderCoreHookCell(isCore: boolean, language: "zh" | "en"): string {
+function renderCoreHookCell(isCore: boolean, language: "zh" | "en" | "vi"): string {
   if (language === "en") return isCore ? "true" : "false";
   return isCore ? "是" : "否";
 }
@@ -86,7 +84,7 @@ function renderHalfLifeCell(value: number | undefined): string {
   return String(Math.trunc(value));
 }
 
-function renderPromotedCell(value: boolean | undefined, language: "zh" | "en"): string {
+function renderPromotedCell(value: boolean | undefined, language: "zh" | "en" | "vi"): string {
   if (value === undefined) return "";
   if (language === "en") return value ? "true" : "false";
   return value ? "是" : "否";
@@ -94,18 +92,16 @@ function renderPromotedCell(value: boolean | undefined, language: "zh" | "en"): 
 
 export function renderChapterSummariesProjection(
   state: ChapterSummariesState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
-  const title = language === "en" ? "# Chapter Summaries" : "# 章节摘要";
-  const headers = language === "en"
-    ? [
-      "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
-      "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ];
+  const title = language === "zh" ? "# 章节摘要" : "# Chapter Summaries";
+  const headers = language === "zh" ? [
+    "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+  ] : [
+    "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+  ];
 
   const rows = [...state.rows]
     .sort((left, right) => left.chapter - right.chapter)
@@ -127,39 +123,37 @@ export function renderChapterSummariesProjection(
 
 export function renderCurrentStateProjection(
   state: CurrentStateState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "en" | "vi" = "zh",
 ): string {
-  const layout = language === "en"
-    ? {
-      title: "# Current State",
-      tableHeader: "| Field | Value |",
-      labels: {
-        chapter: "Current Chapter",
-        location: "Current Location",
-        protagonistState: "Protagonist State",
-        goal: "Current Goal",
-        constraint: "Current Constraint",
-        alliances: "Current Alliances",
-        conflict: "Current Conflict",
-      },
-      placeholders: "(not set)",
-      additionalTitle: "## Additional State",
-    }
-    : {
-      title: "# 当前状态",
-      tableHeader: "| 字段 | 值 |",
-      labels: {
-        chapter: "当前章节",
-        location: "当前位置",
-        protagonistState: "主角状态",
-        goal: "当前目标",
-        constraint: "当前限制",
-        alliances: "当前敌我",
-        conflict: "当前冲突",
-      },
-      placeholders: "（未设定）",
-      additionalTitle: "## 其他状态",
-    };
+  const layout = language === "zh" ? {
+    title: "# 当前状态",
+    tableHeader: "| 字段 | 值 |",
+    labels: {
+      chapter: "当前章节",
+      location: "当前位置",
+      protagonistState: "主角状态",
+      goal: "当前目标",
+      constraint: "当前限制",
+      alliances: "当前敌我",
+      conflict: "当前冲突",
+    },
+    placeholders: "（未设定）",
+    additionalTitle: "## 其他状态",
+  } : {
+    title: "# Current State",
+    tableHeader: "| Field | Value |",
+    labels: {
+      chapter: "Current Chapter",
+      location: "Current Location",
+      protagonistState: "Protagonist State",
+      goal: "Current Goal",
+      constraint: "Current Constraint",
+      alliances: "Current Alliances",
+      conflict: "Current Conflict",
+    },
+    placeholders: "(not set)",
+    additionalTitle: "## Additional State",
+  };
 
   const slots = [
     {

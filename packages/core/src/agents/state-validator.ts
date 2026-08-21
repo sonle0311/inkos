@@ -37,7 +37,7 @@ export class StateValidatorAgent extends BaseAgent {
     newState: string,
     oldHooks: string,
     newHooks: string,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "en" | "vi" = "zh",
     authorityContext?: StateValidationAuthorityContext,
   ): Promise<ValidationResult> {
     const stateDiff = this.computeDiff(oldState, newState, "State Card");
@@ -48,9 +48,7 @@ export class StateValidatorAgent extends BaseAgent {
       return { warnings: [], passed: true, repairRequired: false };
     }
 
-    const langInstruction = language === "en"
-      ? "Respond in English."
-      : "用中文回答。";
+    const langInstruction = language === "zh" ? "用中文回答。" : language === "vi" ? "Trả lời bằng tiếng Việt." : "Respond in English.";
 
     const systemPrompt = `You are a continuity validator for a novel writing system. ${langInstruction}
 

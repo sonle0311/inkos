@@ -20,7 +20,7 @@ export interface StudioBookConfigDraft {
   readonly status: "outlining";
   readonly targetChapters: number;
   readonly chapterWordCount: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -41,12 +41,16 @@ export function buildStudioBookConfig(body: StudioCreateBookBody, now: string): 
     genre: body.genre,
     status: "outlining",
     targetChapters: body.targetChapters ?? 200,
-    chapterWordCount: body.chapterWordCount ?? defaultChapterLength(body.language === "en" ? "en" : "zh"),
-    ...(body.language === "en"
-      ? { language: "en" as const }
-      : body.language === "zh"
-        ? { language: "zh" as const }
-        : {}),
+    chapterWordCount: body.chapterWordCount ?? defaultChapterLength(
+      body.language === "vi" ? "vi" : body.language === "en" ? "en" : "zh",
+    ),
+    ...(body.language === "vi"
+      ? { language: "vi" as const }
+      : body.language === "en"
+        ? { language: "en" as const }
+        : body.language === "zh"
+          ? { language: "zh" as const }
+          : {}),
     createdAt: now,
     updatedAt: now,
   };

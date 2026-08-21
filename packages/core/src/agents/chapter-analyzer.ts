@@ -129,48 +129,34 @@ export class ChapterAnalyzerAgent extends BaseAgent {
       emotionalArcs: emotionalWorkingSet,
       characterMatrix: matrixWorkingSet,
       bibleBlock: !governedMode && storyBible !== this.missingFilePlaceholder(resolvedLanguage)
-        ? resolvedLanguage === "en"
-          ? `\n## Story Bible\n${storyBible}\n`
-          : `\n## 世界观设定\n${storyBible}\n`
+        ? resolvedLanguage === "zh" ? `\n## 世界观设定\n${storyBible}\n` : `\n## Story Bible\n${storyBible}\n`
         : "",
       outlineOrControlBlock: reducedControlBlock || (
         volumeOutline !== this.missingFilePlaceholder(resolvedLanguage)
-          ? resolvedLanguage === "en"
-            ? `\n## Volume Outline\n${volumeOutline}\n`
-            : `\n## 卷纲\n${volumeOutline}\n`
+          ? resolvedLanguage === "zh" ? `\n## 卷纲\n${volumeOutline}\n` : `\n## Volume Outline\n${volumeOutline}\n`
           : ""
       ),
       hooksBlock: governedMemoryBlocks?.hooksBlock
         ?? (
           hooksWorkingSet !== this.missingFilePlaceholder(resolvedLanguage)
-            ? resolvedLanguage === "en"
-              ? `\n## Current Hooks\n${hooksWorkingSet}\n`
-              : `\n## 当前伏笔池\n${hooksWorkingSet}\n`
+            ? resolvedLanguage === "zh" ? `\n## 当前伏笔池\n${hooksWorkingSet}\n` : `\n## Current Hooks\n${hooksWorkingSet}\n`
             : ""
         ),
       summariesBlock: governedMemoryBlocks?.summariesBlock
         ?? (
           chapterSummaries !== this.missingFilePlaceholder(resolvedLanguage)
-            ? resolvedLanguage === "en"
-              ? `\n## Existing Chapter Summaries\n${chapterSummaries}\n`
-              : `\n## 已有章节摘要\n${chapterSummaries}\n`
+            ? resolvedLanguage === "zh" ? `\n## 已有章节摘要\n${chapterSummaries}\n` : `\n## Existing Chapter Summaries\n${chapterSummaries}\n`
             : ""
         ),
       volumeSummariesBlock: governedMemoryBlocks?.volumeSummariesBlock ?? "",
       subplotBlock: subplotWorkingSet !== this.missingFilePlaceholder(resolvedLanguage)
-        ? resolvedLanguage === "en"
-          ? `\n## Current Subplot Board\n${subplotWorkingSet}\n`
-          : `\n## 当前支线进度板\n${subplotWorkingSet}\n`
+        ? resolvedLanguage === "zh" ? `\n## 当前支线进度板\n${subplotWorkingSet}\n` : `\n## Current Subplot Board\n${subplotWorkingSet}\n`
         : "",
       emotionalBlock: emotionalWorkingSet !== this.missingFilePlaceholder(resolvedLanguage)
-        ? resolvedLanguage === "en"
-          ? `\n## Current Emotional Arcs\n${emotionalWorkingSet}\n`
-          : `\n## 当前情感弧线\n${emotionalWorkingSet}\n`
+        ? resolvedLanguage === "zh" ? `\n## 当前情感弧线\n${emotionalWorkingSet}\n` : `\n## Current Emotional Arcs\n${emotionalWorkingSet}\n`
         : "",
       matrixBlock: matrixWorkingSet !== this.missingFilePlaceholder(resolvedLanguage)
-        ? resolvedLanguage === "en"
-          ? `\n## Current Character Matrix\n${matrixWorkingSet}\n`
-          : `\n## 当前角色交互矩阵\n${matrixWorkingSet}\n`
+        ? resolvedLanguage === "zh" ? `\n## 当前角色交互矩阵\n${matrixWorkingSet}\n` : `\n## Current Character Matrix\n${matrixWorkingSet}\n`
         : "",
     });
 
@@ -215,116 +201,114 @@ export class ChapterAnalyzerAgent extends BaseAgent {
     genreProfile: GenreProfile,
     genreBody: string,
     bookRulesBody: string,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
-    if (language === "en") {
-      const numericalBlock = genreProfile.numericalSystem
-        ? "\n- This genre tracks numerical/resources systems; UPDATED_LEDGER must capture every resource change shown in the chapter."
-        : "\n- This genre has no numerical system; leave UPDATED_LEDGER empty.";
+    if (language !== "zh") { const numericalBlock = genreProfile.numericalSystem
+      ? "\n- This genre tracks numerical/resources systems; UPDATED_LEDGER must capture every resource change shown in the chapter."
+      : "\n- This genre has no numerical system; leave UPDATED_LEDGER empty.";
 
-      return `【LANGUAGE OVERRIDE】ALL output MUST be in English. The === TAG === markers remain unchanged.
+    return `【LANGUAGE OVERRIDE】ALL output MUST be in English. The === TAG === markers remain unchanged.
 
-You are a fiction continuity analyst. Analyze a finished chapter, extract every state change, and update the tracking files.
+    You are a fiction continuity analyst. Analyze a finished chapter, extract every state change, and update the tracking files.
 
-## Working Mode
+    ## Working Mode
 
-You are not writing new prose. You are reading completed chapter text and updating the book's truth files.
-1. Read the chapter carefully and extract all important facts.
-2. Update the existing tracking files incrementally rather than rebuilding them from scratch.
-3. Keep the output contract identical to the writer pipeline.
+    You are not writing new prose. You are reading completed chapter text and updating the book's truth files.
+    1. Read the chapter carefully and extract all important facts.
+    2. Update the existing tracking files incrementally rather than rebuilding them from scratch.
+    3. Keep the output contract identical to the writer pipeline.
 
-## What To Extract
+    ## What To Extract
 
-- Character entrances, exits, injuries, breakthroughs, deaths, and other status changes
-- Location movement and scene transitions
-- Item or resource gains and losses
-- Hook setup, advancement, and payoff
-- Emotional arc movement
-- Subplot progress
-- Relationship changes and information-boundary changes
+    - Character entrances, exits, injuries, breakthroughs, deaths, and other status changes
+    - Location movement and scene transitions
+    - Item or resource gains and losses
+    - Hook setup, advancement, and payoff
+    - Emotional arc movement
+    - Subplot progress
+    - Relationship changes and information-boundary changes
 
-## Book Information
+    ## Book Information
 
-- Title: ${book.title}
-- Genre: ${genreProfile.name} (${book.genre})
-- Platform: ${book.platform}
-${numericalBlock}
+    - Title: ${book.title}
+    - Genre: ${genreProfile.name} (${book.genre})
+    - Platform: ${book.platform}
+    ${numericalBlock}
 
-## Genre Guidance
+    ## Genre Guidance
 
-${genreBody}
+    ${genreBody}
 
-${bookRulesBody ? `## Book Rules\n\n${bookRulesBody}` : ""}
+    ${bookRulesBody ? `## Book Rules\n\n${bookRulesBody}` : ""}
 
-## Output Format
+    ## Output Format
 
-Use === TAG === delimiters exactly as shown:
+    Use === TAG === delimiters exactly as shown:
 
-=== CHAPTER_TITLE ===
-(Extract or infer the chapter title. Output title text only.)
+    === CHAPTER_TITLE ===
+    (Extract or infer the chapter title. Output title text only.)
 
-=== CHAPTER_CONTENT ===
-(Repeat the original chapter content exactly. Do not rewrite.)
+    === CHAPTER_CONTENT ===
+    (Repeat the original chapter content exactly. Do not rewrite.)
 
-=== PRE_WRITE_CHECK ===
-(Leave empty in analysis mode.)
+    === PRE_WRITE_CHECK ===
+    (Leave empty in analysis mode.)
 
-=== POST_SETTLEMENT ===
-(Leave empty in analysis mode.)
+    === POST_SETTLEMENT ===
+    (Leave empty in analysis mode.)
 
-=== UPDATED_STATE ===
-Updated state card as a Markdown table reflecting the end-of-chapter state:
-| Field | Value |
-| --- | --- |
-| Current Chapter | {chapter_number} |
-| Current Location | ... |
-| Protagonist State | ... |
-| Current Goal | ... |
-| Current Constraint | ... |
-| Current Alliances | ... |
-| Current Conflict | ... |
+    === UPDATED_STATE ===
+    Updated state card as a Markdown table reflecting the end-of-chapter state:
+    | Field | Value |
+    | --- | --- |
+    | Current Chapter | {chapter_number} |
+    | Current Location | ... |
+    | Protagonist State | ... |
+    | Current Goal | ... |
+    | Current Constraint | ... |
+    | Current Alliances | ... |
+    | Current Conflict | ... |
 
-=== UPDATED_LEDGER ===
-(If the genre has a numerical system: output the fully updated resource ledger table. Otherwise leave empty.)
+    === UPDATED_LEDGER ===
+    (If the genre has a numerical system: output the fully updated resource ledger table. Otherwise leave empty.)
 
-=== UPDATED_HOOKS ===
-Updated hooks pool as a Markdown table with the latest status of every known hook:
-| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | payoff_timing | notes |
+    === UPDATED_HOOKS ===
+    Updated hooks pool as a Markdown table with the latest status of every known hook:
+    | hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | payoff_timing | notes |
 
-=== CHAPTER_SUMMARY ===
-Single Markdown table row:
-| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |
+    === CHAPTER_SUMMARY ===
+    Single Markdown table row:
+    | Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |
 
-=== UPDATED_SUBPLOTS ===
-Updated subplot board (Markdown table)
+    === UPDATED_SUBPLOTS ===
+    Updated subplot board (Markdown table)
 
-=== UPDATED_EMOTIONAL_ARCS ===
-Updated emotional arcs (Markdown table)
+    === UPDATED_EMOTIONAL_ARCS ===
+    Updated emotional arcs (Markdown table)
 
-=== UPDATED_CHARACTER_MATRIX ===
-Updated character matrix (one ## section per character, bullet-list fields):
+    === UPDATED_CHARACTER_MATRIX ===
+    Updated character matrix (one ## section per character, bullet-list fields):
 
-## Character Name
-- **Role**: protagonist / antagonist / ally / minor / mentioned
-- **Tags**: core identity tags
-- **Contrast**: distinctive details that defy expectations
-- **Speech**: speaking style summary
-- **Personality**: core personality traits
-- **Motivation**: fundamental driving force
-- **Current**: immediate goal this chapter
-- **Relationships**: OtherChar(type/Ch#) | ...
-- **Known**: what this character knows (only witnessed or told)
-- **Unknown**: what this character does not know
+    ## Character Name
+    - **Role**: protagonist / antagonist / ally / minor / mentioned
+    - **Tags**: core identity tags
+    - **Contrast**: distinctive details that defy expectations
+    - **Speech**: speaking style summary
+    - **Personality**: core personality traits
+    - **Motivation**: fundamental driving force
+    - **Current**: immediate goal this chapter
+    - **Relationships**: OtherChar(type/Ch#) | ...
+    - **Known**: what this character knows (only witnessed or told)
+    - **Unknown**: what this character does not know
 
-(Repeat for each character. Add new characters; keep existing ones updated.)
+    (Repeat for each character. Add new characters; keep existing ones updated.)
 
-## Rules
+    ## Rules
 
-1. UPDATED_STATE and UPDATED_HOOKS must be incremental updates based on the current tracking files.
-2. Every factual change in the chapter must appear in the corresponding tracking file.
-3. Do not miss resource changes, movement, relationship changes, or information changes.
-4. Information boundaries in the character matrix must stay exact: each character only knows what they directly witnessed or learned.`;
-    }
+    1. UPDATED_STATE and UPDATED_HOOKS must be incremental updates based on the current tracking files.
+    2. Every factual change in the chapter must appear in the corresponding tracking file.
+    3. Do not miss resource changes, movement, relationship changes, or information changes.
+    4. Information boundaries in the character matrix must stay exact: each character only knows what they directly witnessed or learned.`; }
 
     const numericalBlock = genreProfile.numericalSystem
       ? `\n- 本题材有数值/资源体系，你必须在 UPDATED_LEDGER 中追踪正文中出现的所有资源变动`
@@ -434,7 +418,7 @@ ${bookRulesBody ? `## 本书规则\n\n${bookRulesBody}` : ""}
   }
 
   private buildUserPrompt(params: {
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "en" | "vi";
     readonly chapterNumber: number;
     readonly chapterContent: string;
     readonly chapterTitle?: string;
@@ -454,28 +438,26 @@ ${bookRulesBody ? `## 本书规则\n\n${bookRulesBody}` : ""}
     readonly bibleBlock: string;
     readonly outlineOrControlBlock: string;
   }): string {
-    if (params.language === "en") {
-      const titleLine = params.chapterTitle
-        ? `Chapter Title: ${params.chapterTitle}\n`
-        : "";
+    if (params.language !== "zh") { const titleLine = params.chapterTitle
+      ? `Chapter Title: ${params.chapterTitle}\n`
+      : "";
 
-      const ledgerBlock = params.ledger
-        ? `\n## Current Resource Ledger\n${params.ledger}\n`
-        : "";
+    const ledgerBlock = params.ledger
+      ? `\n## Current Resource Ledger\n${params.ledger}\n`
+      : "";
 
-      return `Analyze chapter ${params.chapterNumber} and update all tracking files.
-${titleLine}
-## Chapter Content
+    return `Analyze chapter ${params.chapterNumber} and update all tracking files.
+    ${titleLine}
+    ## Chapter Content
 
-${params.chapterContent}
+    ${params.chapterContent}
 
-## Current State
-${params.currentState}
-${ledgerBlock}
-${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params.emotionalBlock}${params.matrixBlock}${params.summariesBlock}${params.outlineOrControlBlock}${params.bibleBlock}
+    ## Current State
+    ${params.currentState}
+    ${ledgerBlock}
+    ${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params.emotionalBlock}${params.matrixBlock}${params.summariesBlock}${params.outlineOrControlBlock}${params.bibleBlock}
 
-Please return the result strictly in the === TAG === format.`;
-    }
+    Please return the result strictly in the === TAG === format.`; }
 
     const titleLine = params.chapterTitle
       ? `章节标题：${params.chapterTitle}\n`
@@ -503,7 +485,7 @@ ${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params
     chapterIntent: string,
     contextPackage: ContextPackage,
     ruleStack: RuleStack,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
     const selectedContext = contextPackage.selectedContext
       .map((entry) => `- ${entry.source}: ${entry.reason}${entry.excerpt ? ` | ${entry.excerpt}` : ""}`)
@@ -514,33 +496,31 @@ ${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params
         .join("\n")
       : "- none";
 
-    return language === "en"
-      ? `\n## Chapter Control Inputs (compiled by Planner/Composer)
-${chapterIntent}
+    return language === "zh" ? `\n## 本章控制输入（由 Planner/Composer 编译）
+    ${chapterIntent}
 
-### Selected Context
-${selectedContext || "- none"}
+    ### 已选上下文
+    ${selectedContext || "- none"}
 
-### Rule Stack
-- Hard guardrails: ${ruleStack.sections.hard.join(", ") || "(none)"}
-- Soft constraints: ${ruleStack.sections.soft.join(", ") || "(none)"}
-- Diagnostic rules: ${ruleStack.sections.diagnostic.join(", ") || "(none)"}
+    ### 规则栈
+    - 硬护栏：${ruleStack.sections.hard.join("、") || "(无)"}
+    - 软约束：${ruleStack.sections.soft.join("、") || "(无)"}
+    - 诊断规则：${ruleStack.sections.diagnostic.join("、") || "(无)"}
 
-### Active Overrides
-${overrides}\n`
-      : `\n## 本章控制输入（由 Planner/Composer 编译）
-${chapterIntent}
+    ### 当前覆盖
+    ${overrides}\n` : `\n## Chapter Control Inputs (compiled by Planner/Composer)
+    ${chapterIntent}
 
-### 已选上下文
-${selectedContext || "- none"}
+    ### Selected Context
+    ${selectedContext || "- none"}
 
-### 规则栈
-- 硬护栏：${ruleStack.sections.hard.join("、") || "(无)"}
-- 软约束：${ruleStack.sections.soft.join("、") || "(无)"}
-- 诊断规则：${ruleStack.sections.diagnostic.join("、") || "(无)"}
+    ### Rule Stack
+    - Hard guardrails: ${ruleStack.sections.hard.join(", ") || "(none)"}
+    - Soft constraints: ${ruleStack.sections.soft.join(", ") || "(none)"}
+    - Diagnostic rules: ${ruleStack.sections.diagnostic.join(", ") || "(none)"}
 
-### 当前覆盖
-${overrides}\n`;
+    ### Active Overrides
+    ${overrides}\n`;
   }
 
   private buildMemoryGoal(chapterTitle: string | undefined, chapterContent: string): string {
@@ -579,21 +559,19 @@ ${overrides}\n`;
       mood: string;
       chapterType: string;
     }>,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
   ): string {
     if (summaries.length === 0) {
       return this.missingFilePlaceholder(language);
     }
 
-    const header = language === "en"
-      ? [
-          "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
-          "| --- | --- | --- | --- | --- | --- | --- | --- |",
-        ]
-      : [
-          "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
-          "| --- | --- | --- | --- | --- | --- | --- | --- |",
-        ];
+    const header = language === "zh" ? [
+        "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      ] : [
+        "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      ];
 
     const rows = summaries.map((summary) => [
       summary.chapter,
@@ -616,7 +594,7 @@ ${overrides}\n`;
     return value.replace(/\|/g, "\\|").replace(/\n/g, "<br>");
   }
 
-  private async readFileOrDefault(path: string, language: "zh" | "en"): Promise<string> {
+  private async readFileOrDefault(path: string, language: "zh" | "en" | "vi"): Promise<string> {
     try {
       return await readFile(path, "utf-8");
     } catch {
@@ -624,11 +602,11 @@ ${overrides}\n`;
     }
   }
 
-  private missingFilePlaceholder(language: "zh" | "en"): string {
-    return language === "en" ? "(file not created yet)" : "(文件尚未创建)";
+  private missingFilePlaceholder(language: "zh" | "en" | "vi"): string {
+    return language === "zh" ? "(文件尚未创建)" : "(file not created yet)";
   }
 
-  private defaultChapterTitle(chapterNumber: number, language: "zh" | "en"): string {
-    return language === "en" ? `Chapter ${chapterNumber}` : `第${chapterNumber}章`;
+  private defaultChapterTitle(chapterNumber: number, language: "zh" | "en" | "vi"): string {
+    return language === "zh" ? `第${chapterNumber}章` : language === "vi" ? `Chương ${chapterNumber}` : `Chapter ${chapterNumber}`;
   }
 }

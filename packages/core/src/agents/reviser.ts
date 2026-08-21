@@ -165,8 +165,8 @@ export class ReviserAgent extends BaseAgent {
       ? styleGuideRaw
       : (legacyRulesBody || "(无文风指南)");
 
-    const isEnglish = (bookLanguage ?? gp.language) === "en";
-    const resolvedLanguage = isEnglish ? "en" : "zh";
+    const isEnglish = (bookLanguage ?? gp.language) !== "zh"
+    const resolvedLanguage = isEnglish ? (bookLanguage ?? gp.language) : "zh";
 
     const issueList = mode === "auto"
       ? buildTieredIssueList(issues, isEnglish)
@@ -191,9 +191,11 @@ export class ReviserAgent extends BaseAgent {
           ? "\n8. Keep the chapter word count within the target range; only allow minor deviation when fixing critical issues truly requires it"
           : "\n8. 保持章节字数在目标区间内；只有在修复关键问题确实需要时才允许轻微偏离")
       : "";
-    const langPrefix = isEnglish
-      ? `【LANGUAGE OVERRIDE】ALL output (FIXED_ISSUES, PATCHES, REVISED_CONTENT) MUST be in English.\n\n`
-      : "";
+    const langPrefix = resolvedLanguage === "vi"
+      ? `【LANGUAGE OVERRIDE】ALL output (FIXED_ISSUES, PATCHES, REVISED_CONTENT, UPDATED_STATE, UPDATED_HOOKS) MUST be written in Vietnamese (tiếng Việt). All prose and field values must be natural Vietnamese.\n\n`
+      : isEnglish
+        ? `【LANGUAGE OVERRIDE】ALL output (FIXED_ISSUES, PATCHES, REVISED_CONTENT) MUST be in English.\n\n`
+        : "";
     const governedMode = Boolean(options?.chapterIntent && options?.contextPackage && options?.ruleStack);
     const hooksWorkingSet = governedMode && options?.contextPackage
       ? buildGovernedHookWorkingSet({
@@ -388,7 +390,7 @@ ${chapterContent}`;
     protagonistBlock: string;
     numericalRule: string;
     lengthGuardrail: string;
-    resolvedLanguage: "zh" | "en";
+    resolvedLanguage: "zh" | "en" | "vi";
     lengthSpec?: LengthSpec;
     autoOutputMode: AutoOutputMode;
   }): string {
@@ -506,7 +508,7 @@ REPLACEMENT_TEXT:
     numericalRule: string;
     lengthGuardrail: string;
     mode: ReviseMode;
-    resolvedLanguage: "zh" | "en";
+    resolvedLanguage: "zh" | "en" | "vi";
   }): string {
     const { langPrefix, gp, protagonistBlock, numericalRule, lengthGuardrail, mode } = params;
     const modeDesc = MODE_DESCRIPTIONS[mode];

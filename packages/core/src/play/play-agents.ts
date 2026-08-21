@@ -14,7 +14,7 @@ import { appendPromptPackGuidance } from "../prompts/prompt-pack.js";
 export interface PlayActionInterpreterInput {
   readonly input: string;
   readonly sceneBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface PlayWorldMutatorInput {
@@ -22,7 +22,7 @@ export interface PlayWorldMutatorInput {
   readonly input: string;
   readonly action: PlayActionIntentInput;
   readonly context: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface PlaySceneRenderInput {
@@ -32,7 +32,7 @@ export interface PlaySceneRenderInput {
   readonly mutationSummary: string;
   readonly stateBrief: string;
   readonly replayContext?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   // The world's premise — a persistent anchor so the scene stays in the
   // established era/setting/genre and doesn't drift (a modern shop must not grow
   // night-watchmen and oil lamps).
@@ -47,7 +47,7 @@ export interface PlaySceneReconcileInput {
   readonly sceneText: string;
   readonly context: string;
   readonly stateBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly worldPremise?: string;
 }
 
@@ -407,8 +407,8 @@ function emptyReconciliation(turn: number, actionKind: PlayActionIntent["actionK
   };
 }
 
-function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildSceneReconcilerSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return [
       "You reconcile an interactive-fiction scene with the world graph.",
       "Compare the rendered prose against the already applied changes and current state summary.",
@@ -428,32 +428,30 @@ function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "en"): string {
+function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "en" | "vi"): string {
   const actionKind = PlayActionIntentSchema.parse(input.action).actionKind;
   const eventId = `evt-${input.turn}`;
-  if (language === "en") {
-    return [
-      `eventId: ${eventId}`,
-      `turn: ${input.turn}`,
-      `actionKind: ${actionKind}`,
-      "",
-      ...(input.worldPremise ? ["World setting:", input.worldPremise, ""] : []),
-      "Player input:",
-      input.input,
-      "",
-      "Current context before this turn:",
-      input.context,
-      "",
-      "Applied mutation:",
-      JSON.stringify(PlayMutationSchema.parse(input.mutation), null, 2),
-      "",
-      "Current state summary:",
-      input.stateBrief,
-      "",
-      "Rendered scene:",
-      input.sceneText,
-    ].join("\n");
-  }
+  if (language !== "zh") { return [
+    `eventId: ${eventId}`,
+    `turn: ${input.turn}`,
+    `actionKind: ${actionKind}`,
+    "",
+    ...(input.worldPremise ? ["World setting:", input.worldPremise, ""] : []),
+    "Player input:",
+    input.input,
+    "",
+    "Current context before this turn:",
+    input.context,
+    "",
+    "Applied mutation:",
+    JSON.stringify(PlayMutationSchema.parse(input.mutation), null, 2),
+    "",
+    "Current state summary:",
+    input.stateBrief,
+    "",
+    "Rendered scene:",
+    input.sceneText,
+  ].join("\n"); }
   return [
     `eventId: ${eventId}`,
     `turn: ${input.turn}`,
@@ -477,16 +475,14 @@ function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language
   ].join("\n");
 }
 
-function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "You are an interactive-fiction action interpreter.",
-      "Your job is to normalize one line of the player's natural language into one of five action kinds: look / say / move / do / wait.",
-      "Do not add drama for the player, do not advance the plot, do not write scene prose.",
-      "look = observe/examine/recall a clue; say = speak/probe/confront; move = move to a location; do = perform an action/use an item/investigate; wait = wait/stall/watch.",
-      "Output strict JSON, no explanation.",
-    ].join("\n");
-  }
+function buildActionInterpreterSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "You are an interactive-fiction action interpreter.",
+    "Your job is to normalize one line of the player's natural language into one of five action kinds: look / say / move / do / wait.",
+    "Do not add drama for the player, do not advance the plot, do not write scene prose.",
+    "look = observe/examine/recall a clue; say = speak/probe/confront; move = move to a location; do = perform an action/use an item/investigate; wait = wait/stall/watch.",
+    "Output strict JSON, no explanation.",
+  ].join("\n"); }
   return [
     "你是互动小说动作理解器。",
     "你的任务是把玩家一句自然语言，归一成五类动作之一：look / say / move / do / wait。",
@@ -496,18 +492,16 @@ function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      "Current scene:",
-      input.sceneBrief,
-      "",
-      "Player input:",
-      input.input,
-      "",
-      "Output fields: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
-    ].join("\n");
-  }
+function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    "Current scene:",
+    input.sceneBrief,
+    "",
+    "Player input:",
+    input.input,
+    "",
+    "Output fields: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
+  ].join("\n"); }
   return [
     "当前场景：",
     input.sceneBrief,
@@ -519,8 +513,8 @@ function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, lan
   ].join("\n");
 }
 
-function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
-  if (language === "en") {
+function buildWorldMutatorSystemPrompt(language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") {
     return [
       "You are an interactive-fiction world-state drafter.",
       "Based only on the player's action and the current context, propose this turn's possible state changes as a draft.",
@@ -566,22 +560,20 @@ function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "en"): string {
-  if (language === "en") {
-    return [
-      `turn: ${input.turn}`,
-      "Player's words:",
-      input.input,
-      "",
-      "Action interpretation:",
-      JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
-      "",
-      "Current context:",
-      input.context,
-      "",
-      "Requirement: use eventId evt-" + input.turn + "; every new or referenced entity id must be stable, readable, and short.",
-    ].join("\n");
-  }
+function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "en" | "vi"): string {
+  if (language !== "zh") { return [
+    `turn: ${input.turn}`,
+    "Player's words:",
+    input.input,
+    "",
+    "Action interpretation:",
+    JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
+    "",
+    "Current context:",
+    input.context,
+    "",
+    "Requirement: use eventId evt-" + input.turn + "; every new or referenced entity id must be stable, readable, and short.",
+  ].join("\n"); }
   return [
     `turn: ${input.turn}`,
     "玩家原话：",
@@ -597,9 +589,21 @@ function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh
   ].join("\n");
 }
 
-export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    const base = [
+export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { const base = [
+    "You are an interactive-fiction scene-response author.",
+    "Write the response only from the already-applied state; do not overturn the reducer's results.",
+    "Concrete new objects, clues, evidence, locations, organizations, or named people can only appear if they are already present in Applied changes or Current state summary. If the prose needs a new concrete thing, it must have been created by the mutator first; otherwise describe mood, pressure, or an unnamed detail instead.",
+    "It should read like a playable novel — action, senses, pressure, breathing room — never a system log and never a menu-narration that herds the player into picking something.",
+    "Bridge from the player's action first. Even though the state is already applied, do not start as if everything is already over; write the follow-through, contact, resistance, interruption, and immediate consequence so the action connects to the new state.",
+    "Do not jump straight to the after-action result, and do not write epilogue-style summaries, morals, or closing-theme lines. End on an immediate sensory pressure, changed position, exposed detail, or nearby consequence.",
+    "Stay strictly inside the world the premise established — era, place, tech level, genre tone must stay consistent. Never introduce elements that don't belong: a modern-city story must not grow night-watchmen / oil lamps; a historical/wuxia story must not sprout phones / cars / computers. Every detail lands inside the given world.",
+    // Presence is a valid turn.
+    "The player is not always 'acting'. When they merely observe, linger, feel, idle-chat, or do nothing, give an immersive beat — one living detail, a smell, a bystander's small movement, a thought crossing their mind. NEVER say 'there's nothing more to see' / 'you already looked' / 'stop stalling', and never nag them to hurry up and act. Let the beat breathe.",
+    // The world runs on its own clock.
+    "The world is not inert. Time moves, the deadline closes in, side characters act on their own, something stirs in the distance, off-screen events happen. Even on a turn where the player did nothing, nudge the world forward a little — so the pull to move forward comes from the STORY (the trail goes cold / the deadline nears / someone moved first), not from the narration pestering them to choose.",
+    "If Current state summary includes a Time section, treat elapsed and anchor as canonical. Render the scene after exactly that elapsed interval, at that resulting world time/phase, and include the synchronized pressure/character movement naturally in prose. Do not invent another clock reading, another elapsed amount, or a fixed tick label.",
+      ...(language === "vi" ? ["【LANGUAGE OVERRIDE】Write sceneText and suggestedActions entirely in Vietnamese (tiếng Việt). JSON keys stay unchanged."] : []),
       "You are an interactive-fiction scene-response author.",
       "Write the response only from the already-applied state; do not overturn the reducer's results.",
       "The scene must visibly carry out every completed part of the player's action recorded in Applied changes before writing its aftermath. Do not skip a requested examination, conversation, movement, or use of an item and jump straight to a reaction or decision point.",
@@ -628,10 +632,10 @@ export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open",
   return [...base, actionsRule, "输出严格 JSON：sceneText, suggestedActions。"].join("\n");
 }
 
-function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "en"): string {
+function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "en" | "vi"): string {
   const premise = input.worldPremise?.trim();
   const context = input.context?.trim();
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       ...(premise ? ["World setting (always obey):", premise, ""] : []),
       ...(context ? ["Authoritative context before this action:", context, ""] : []),

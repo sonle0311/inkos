@@ -30,7 +30,7 @@ export interface PlayActionInterpreterLike {
   readonly interpret: (input: {
     readonly input: string;
     readonly sceneBrief: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   }) => Promise<PlayActionIntentInput>;
 }
 
@@ -40,7 +40,7 @@ export interface PlayWorldMutatorLike {
     readonly input: string;
     readonly action: PlayActionIntentInput;
     readonly context: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
   }) => Promise<PlayMutationInput>;
 }
 
@@ -53,7 +53,7 @@ export interface PlaySceneRendererLike {
     readonly stateBrief: string;
     readonly replayContext?: string;
     readonly mode?: "open" | "guided";
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
     readonly worldPremise?: string;
   }) => Promise<PlaySceneRender>;
 }
@@ -67,7 +67,7 @@ export interface PlaySceneReconcilerLike {
     readonly sceneText: string;
     readonly context: string;
     readonly stateBrief: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "en" | "vi";
     readonly worldPremise?: string;
   }) => Promise<PlayMutationInput>;
 }
@@ -165,7 +165,7 @@ export class PlayRunner {
     const language = world?.language ?? "zh";
     const action: PlayActionIntent = {
       actionKind: "look",
-      intent: language === "en" ? "Seed the opening state for the first playable scene." : "播种第一幕已成立的开场状态。",
+      intent: language === "zh" ? "播种第一幕已成立的开场状态。" : "Seed the opening state for the first playable scene.",
       manner: "",
       risk: "",
       ambiguity: "",
@@ -266,7 +266,7 @@ export class PlayRunner {
     const sceneBrief = await this.readOptionalProjection("projections/scene.md");
     const action = PlayActionIntentSchema.parse(await this.actionInterpreter.interpret({
       input: rawInput,
-      sceneBrief: sceneBrief || (language === "en" ? "A new turn begins; carry over the current world state." : "新回合开始，沿用当前世界状态。"),
+      sceneBrief: sceneBrief || (language === "zh" ? "新回合开始，沿用当前世界状态。" : "A new turn begins; carry over the current world state."),
       language,
     }));
     const worldContext = renderPlayWorldContext(world, language);
@@ -473,9 +473,9 @@ export class PlayRunner {
     };
   }
 
-  private async buildContextBrief(sceneBrief: string, language: "zh" | "en", world: PlayWorld | null): Promise<string> {
+  private async buildContextBrief(sceneBrief: string, language: "zh" | "en" | "vi", world: PlayWorld | null): Promise<string> {
     const stateBrief = await this.readOptionalProjection("projections/state.md");
-    const isEn = language === "en";
+    const isEn = language !== "zh"
     const worldContext = renderPlayWorldContext(world, language);
     const sceneLabel = isEn ? "Current scene:" : "当前场景：";
     const stateLabel = isEn ? "Current state:" : "当前状态：";
@@ -506,10 +506,10 @@ function isOpeningGraphReady(graph: PlayGraphSnapshot | null): boolean {
 function buildOpeningSeedInput(input: {
   readonly sceneText: string;
   readonly suggestedActions: readonly string[];
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
   readonly premise?: string;
 }): string {
-  const isEn = input.language === "en";
+  const isEn = input.language !== "zh"
   const lines = isEn
     ? [
         "Seed only the state that already exists at the opening of this playable world.",
@@ -533,20 +533,18 @@ function buildOpeningSeedInput(input: {
 function buildReplayContext(input: {
   readonly originalInput: string;
   readonly replacementInput?: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "en" | "vi";
 }): string {
   const replacement = input.replacementInput?.trim();
-  if (input.language === "en") {
-    return [
-      "This is a regeneration of the previous turn, not a new next turn.",
-      `Original player input: ${input.originalInput}`,
-      replacement && replacement !== input.originalInput ? `Replacement instruction from user: ${replacement}` : "",
-      "Keep it as the same player action unless the replacement explicitly changes that action.",
-      "The Current state summary is authoritative, especially the Time section. Do not move the clock backward, invent a different elapsed time, or write another timestamp.",
-      "Do not add new player actions the user did not take. Vary prose, sensory detail, pressure, and emphasis while staying inside the same applied state.",
-      "Concrete new facts, people, objects, locations, or clues must already be present in Applied changes or Current state summary.",
-    ].filter(Boolean).join("\n");
-  }
+  if (input.language !== "zh") { return [
+    "This is a regeneration of the previous turn, not a new next turn.",
+    `Original player input: ${input.originalInput}`,
+    replacement && replacement !== input.originalInput ? `Replacement instruction from user: ${replacement}` : "",
+    "Keep it as the same player action unless the replacement explicitly changes that action.",
+    "The Current state summary is authoritative, especially the Time section. Do not move the clock backward, invent a different elapsed time, or write another timestamp.",
+    "Do not add new player actions the user did not take. Vary prose, sensory detail, pressure, and emphasis while staying inside the same applied state.",
+    "Concrete new facts, people, objects, locations, or clues must already be present in Applied changes or Current state summary.",
+  ].filter(Boolean).join("\n"); }
   return [
     "这是在重写上一回合，不是推进新的下一回合。",
     `原玩家动作：${input.originalInput}`,
@@ -558,12 +556,12 @@ function buildReplayContext(input: {
   ].filter(Boolean).join("\n");
 }
 
-function renderPlayWorldContext(world: PlayWorld | null | undefined, language: "zh" | "en"): string {
+function renderPlayWorldContext(world: PlayWorld | null | undefined, language: "zh" | "en" | "vi"): string {
   if (!world) return "";
   const premise = world.premise?.trim();
   const worldContract = world.worldContract?.trim();
   const visualContract = world.visualContract?.trim();
-  const isEn = language === "en";
+  const isEn = language !== "zh"
   const blocks = [
     premise
       ? `${isEn ? "World setting" : "世界设定"}:\n${premise}`
@@ -667,11 +665,11 @@ function isEmptyMutationSupplement(mutation: PlayMutation): boolean {
     && !mutation.blocked;
 }
 
-function renderEntityRoster(entities: ReadonlyArray<PlayEntity>, language: "zh" | "en"): string {
+function renderEntityRoster(entities: ReadonlyArray<PlayEntity>, language: "zh" | "en" | "vi"): string {
   if (entities.length === 0) {
     return "";
   }
-  const isEn = language === "en";
+  const isEn = language !== "zh"
   const header = isEn
     ? "Current entity roster (reuse these ids; do not recreate the same person/thing):"
     : "当前实体名册（复用这些 id；不要把同一个人/物换新 id 重建）：";

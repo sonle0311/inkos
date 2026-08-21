@@ -16,7 +16,7 @@ export interface ScriptCreationInput {
   readonly requirements?: string;
   readonly episodeCount?: number;
   readonly episodeDuration?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 export interface StoryboardCreationInput {
@@ -28,7 +28,7 @@ export interface StoryboardCreationInput {
   readonly aspectRatio?: string;
   readonly granularity?: string;
   readonly maxShots?: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
   readonly segment?: {
     readonly label: string;
     readonly index: number;
@@ -47,19 +47,19 @@ export interface InteractiveFilmCreationInput {
   readonly episodeDuration?: string;
   readonly budget?: string;
   readonly referenceMode?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "en" | "vi";
 }
 
 abstract class LongFormProductionAgent extends BaseAgent {
   protected async recoverProductionMarkdown(
     fragments: string,
-    language: "zh" | "en",
+    language: "zh" | "en" | "vi",
     requiredHeadings: readonly string[],
   ): Promise<string> {
     const response = await this.chat([
       {
         role: "system",
-        content: language === "en"
+        content: language !== "zh"
           ? [
               "You recover one canonical production document after a transport-confirmed output-limit continuation.",
               "The fragments may contain scratch analysis, overlapping suffixes, and complete-document restarts.",
@@ -76,10 +76,10 @@ abstract class LongFormProductionAgent extends BaseAgent {
       {
         role: "user",
         content: [
-          language === "en" ? "## Required Headings" : "## 必需标题",
+          language !== "zh" ? "## Required Headings" : "## 必需标题",
           ...requiredHeadings.map((heading) => `- ${heading}`),
           "",
-          language === "en" ? "## Output Fragments" : "## 输出片段",
+          language !== "zh" ? "## Output Fragments" : "## 输出片段",
           fragments,
         ].join("\n"),
       },
@@ -113,7 +113,7 @@ export class ScriptCreationAgent extends LongFormProductionAgent {
       recoverAfterContinuation: (fragments) => this.recoverProductionMarkdown(
         fragments,
         language,
-        language === "en" ? ["## Characters", "## Script"] : ["## 人物", "## 剧本正文"],
+        language !== "zh" ? ["## Characters", "## Script"] : ["## 人物", "## 剧本正文"],
       ),
     });
     return extractProductionDocument(response.content, input.title);
@@ -142,7 +142,7 @@ export class StoryboardCreationAgent extends LongFormProductionAgent {
       recoverAfterContinuation: (fragments) => this.recoverProductionMarkdown(
         fragments,
         language,
-        language === "en" ? ["## Storyboard", "## Image Prompts"] : ["## 分镜表", "## 图像提示词"],
+        language !== "zh" ? ["## Storyboard", "## Image Prompts"] : ["## 分镜表", "## 图像提示词"],
       ),
     });
     return extractProductionDocument(response.content, input.title);
@@ -171,7 +171,7 @@ export class InteractiveFilmCreationAgent extends LongFormProductionAgent {
       recoverAfterContinuation: (fragments) => this.recoverProductionMarkdown(
         fragments,
         language,
-        language === "en"
+        language !== "zh"
           ? ["## Story Tree", "## Variables and Flags", "## Ending Paths", "## Interactive Script", "## Storyboard and Image Prompts"]
           : ["## 剧情树", "## 变量与旗标表", "## 多结局路径", "## 互动剧本", "## 分镜与图像提示词"],
       ),
@@ -181,7 +181,7 @@ export class InteractiveFilmCreationAgent extends LongFormProductionAgent {
 }
 
 export function renderScriptSpec(input: ScriptCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Script Creation Spec`,
       "",
@@ -230,7 +230,7 @@ export function renderScriptSpec(input: ScriptCreationInput): string {
 }
 
 export function renderStoryboardSpec(input: StoryboardCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Storyboard Creation Spec`,
       "",
@@ -277,7 +277,7 @@ export function renderStoryboardSpec(input: StoryboardCreationInput): string {
 }
 
 export function renderInteractiveFilmSpec(input: InteractiveFilmCreationInput): string {
-  if ((input.language ?? "zh") === "en") {
+  if ((input.language ?? "zh") !== "zh") {
     return [
       `# ${input.title} Interactive Film Creation Spec`,
       "",
@@ -427,8 +427,8 @@ export function normalizeScriptEpisodeEndLabels(script: string): string {
   }).join("\n");
 }
 
-function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildScriptCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "You are a script-creation tool, not a novel-continuation engine.",
       "This is a non-interactive production call after user confirmation. Execute the confirmed creation spec and source material now.",
@@ -446,8 +446,8 @@ function buildScriptCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
   ].join("\n");
 }
 
-function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "## Creation Spec",
       renderScriptSpec(input),
@@ -484,8 +484,8 @@ function buildScriptCreationUserPrompt(input: ScriptCreationInput, language: "zh
   ].join("\n");
 }
 
-function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildStoryboardCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "You are a storyboard-creation tool. Execute the confirmed visual spec and source material; unconfirmed choices remain adjustable.",
       "Output Markdown. No model self-narration or process explanation.",
@@ -497,9 +497,9 @@ function buildStoryboardCreationSystemPrompt(language: "zh" | "en" = "zh"): stri
   ].join("\n");
 }
 
-function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" = "zh"): string {
+function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
   const maxShots = input.maxShots ?? 24;
-  if (language === "en") {
+  if (language !== "zh") {
     return [
       "## Storyboard Spec",
       renderStoryboardSpec(input),
@@ -550,8 +550,8 @@ function buildStoryboardCreationUserPrompt(input: StoryboardCreationInput, langu
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
+function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") {
     return [
       "You are an interactive-film creation tool. Execute the confirmed spec and source material; unconfirmed choices remain adjustable.",
       "Output must be Markdown with the specified sections. No model self-narration, process notes, or \"Here is\" preamble.",
@@ -565,35 +565,33 @@ function buildInteractiveFilmCreationSystemPrompt(language: "zh" | "en" = "zh"):
   ].join("\n");
 }
 
-function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    return [
-      "## Interactive Film Spec",
-      renderInteractiveFilmSpec(input),
-      "",
-      "## Full Source Material",
-      input.sourceText?.trim()
-        || "The user did not provide full source material; write an extensible interactive-film deliverable strictly from the creation spec and user requirements.",
-      "",
-      "## Output Format",
-      `# ${input.title} Interactive Film Package`,
-      "",
-      "## Story Tree",
-      "Lay out main-line nodes, branch nodes, key choices, and merge/no-return relationships as Markdown. The multi-ending structure must be visible at a glance.",
-      "",
-      "## Variables and Flags",
-      "List each variable/flag: name, meaning, trigger, scope of impact, and related nodes. Variables may be relationships, states, evidence, items, identities, secret/public status, ending gates, and so on.",
-      "",
-      "## Ending Paths",
-      "For every ending: its unlock conditions, the key choice chain, the required variables/flags, plus any failure or hidden-ending conditions.",
-      "",
-      "## Interactive Script",
-      "Write a playable script per node: scene, characters, action, dialogue, player choices, variable changes, and branch destinations. Never write summaries only.",
-      "",
-      "## Storyboard and Image Prompts",
-      "List the key shots. Each shot includes visual, characters/objects, action, shot size, and suggested duration. After each shot, add exactly one standalone `Prompt: ...` line.",
-    ].join("\n");
-  }
+function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationInput, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { return [
+    "## Interactive Film Spec",
+    renderInteractiveFilmSpec(input),
+    "",
+    "## Full Source Material",
+    input.sourceText?.trim()
+      || "The user did not provide full source material; write an extensible interactive-film deliverable strictly from the creation spec and user requirements.",
+    "",
+    "## Output Format",
+    `# ${input.title} Interactive Film Package`,
+    "",
+    "## Story Tree",
+    "Lay out main-line nodes, branch nodes, key choices, and merge/no-return relationships as Markdown. The multi-ending structure must be visible at a glance.",
+    "",
+    "## Variables and Flags",
+    "List each variable/flag: name, meaning, trigger, scope of impact, and related nodes. Variables may be relationships, states, evidence, items, identities, secret/public status, ending gates, and so on.",
+    "",
+    "## Ending Paths",
+    "For every ending: its unlock conditions, the key choice chain, the required variables/flags, plus any failure or hidden-ending conditions.",
+    "",
+    "## Interactive Script",
+    "Write a playable script per node: scene, characters, action, dialogue, player choices, variable changes, and branch destinations. Never write summaries only.",
+    "",
+    "## Storyboard and Image Prompts",
+    "List the key shots. Each shot includes visual, characters/objects, action, shot size, and suggested duration. After each shot, add exactly one standalone `Prompt: ...` line.",
+  ].join("\n"); }
   return [
     "## 互动影游规格",
     renderInteractiveFilmSpec(input),
@@ -621,22 +619,20 @@ function buildInteractiveFilmCreationUserPrompt(input: InteractiveFilmCreationIn
   ].join("\n");
 }
 
-function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" = "zh"): string {
-  if (language === "en") {
-    switch (value) {
-      case "vertical_short_drama":
-        return "vertical short drama";
-      case "screenplay":
-        return "standard screenplay";
-      case "audio_drama":
-        return "audio drama";
-      case "interactive_script":
-        return "interactive script";
-      case "general_script":
-      default:
-        return "general script";
-    }
-  }
+function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh" | "en" | "vi" = "zh"): string {
+  if (language !== "zh") { switch (value) {
+    case "vertical_short_drama":
+      return "vertical short drama";
+    case "screenplay":
+      return "standard screenplay";
+    case "audio_drama":
+      return "audio drama";
+    case "interactive_script":
+      return "interactive script";
+    case "general_script":
+    default:
+      return "general script";
+  } }
   switch (value) {
     case "vertical_short_drama":
       return "竖屏短剧";
@@ -652,12 +648,10 @@ function formatScriptTarget(value: ScriptTargetFormat | undefined, language: "zh
   }
 }
 
-function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" = "zh"): string {
+function summarizeSourceForSpec(sourceText: string | undefined, language: "zh" | "en" | "vi" = "zh"): string {
   const text = sourceText?.replace(/\s+/g, " ").trim();
-  if (language === "en") {
-    if (!text) return "No full source material provided.";
-    return `Full source material provided, about ${text.length} characters; the full content will be read during generation.`;
-  }
+  if (language !== "zh") { if (!text) return "No full source material provided.";
+  return `Full source material provided, about ${text.length} characters; the full content will be read during generation.`; }
   if (!text) return "未提供完整源素材。";
   return `已提供完整源素材，约 ${text.length} 字符；生成时会读取完整内容。`;
 }

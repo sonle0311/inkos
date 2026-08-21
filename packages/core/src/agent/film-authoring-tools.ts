@@ -227,13 +227,15 @@ const FillNodeParams = Type.Object({
   instruction: Type.String({ description: "what this scene should contain (beats, who speaks, choices)" }),
 });
 
-export type FilmAuthoringLanguage = "zh" | "en";
+export type FilmAuthoringLanguage = "zh" | "en" | "vi";
 
 const NODE_SYSTEM_ZH = `你是互动影游编剧。根据当前图上下文和指令，写出指定节点的完整场景、对白、选项和配图方向。choices[].targetNodeId 必须指向已存在的节点 id。完成后调用 submit_story_node。`;
 const NODE_SYSTEM_EN = `You are an interactive film scriptwriter. Using the current graph context and the instruction, write the requested node's complete scene, dialogue, choices, and image direction. Every choices[].targetNodeId must point to an existing node id. Finish by calling submit_story_node.`;
 
+const FILM_AUTHORING_VI_PREFIX = "【LANGUAGE OVERRIDE】Write all generated content (titles, sceneDesc, dialogue, choice text, node/ending titles) in Vietnamese (tiếng Việt). JSON keys and the output structure stay unchanged.\n";
+
 function nodeSystemPrompt(language: FilmAuthoringLanguage): string {
-  return language === "en" ? NODE_SYSTEM_EN : NODE_SYSTEM_ZH;
+  return language === "zh" ? NODE_SYSTEM_ZH : FILM_AUTHORING_VI_PREFIX + NODE_SYSTEM_EN;
 }
 
 function graphUpdatedDetails(rev: number, promptId: string, extra: Record<string, unknown> = {}) {
@@ -263,7 +265,7 @@ export function createFillNodeTool(
         promptId: "interactive-film.script",
         projectRoot,
       });
-      const userPrompt = language === "en"
+      const userPrompt = language !== "zh"
         ? `${context}\n\nNode id to fill: ${params.nodeId}\nInstruction: ${params.instruction}`
         : `${context}\n\n要填的节点 id：${params.nodeId}\n指令：${params.instruction}`;
       const node = await deps.submitNode(systemPrompt, userPrompt, params.nodeId, signal);
@@ -299,7 +301,7 @@ export function createReviseNodeTool(
         promptId: "interactive-film.script",
         projectRoot,
       });
-      const userPrompt = language === "en"
+      const userPrompt = language !== "zh"
         ? `${context}\n\nNode id to revise: ${params.nodeId}\nCurrent content: ${JSON.stringify(current ?? {})}\nRevision instruction: ${params.instruction}`
         : `${context}\n\n要修改的节点 id：${params.nodeId}\n现有内容：${JSON.stringify(current ?? {})}\n修改指令：${params.instruction}`;
       const node = await deps.submitNode(systemPrompt, userPrompt, params.nodeId, signal);
@@ -353,11 +355,11 @@ export function createDraftStructureTool(
     async execute(_id, params: Static<typeof DraftStructureParams>, signal) {
       const graph = await loadStoryGraph(projectRoot, projectId);
       const context = graph ? buildFilmAuthoringContext(graph) : "(empty graph)";
-      const systemPrompt = await appendPromptPackGuidance(language === "en" ? STRUCT_SYSTEM_EN : STRUCT_SYSTEM_ZH, {
+      const systemPrompt = await appendPromptPackGuidance(language === "zh" ? STRUCT_SYSTEM_ZH : STRUCT_SYSTEM_EN, {
         promptId: "interactive-film.story-graph",
         projectRoot,
       });
-      const userPrompt = language === "en"
+      const userPrompt = language !== "zh"
         ? `${context}\n\nSkeleton instruction: ${params.instruction}`
         : `${context}\n\n骨架指令：${params.instruction}`;
       const nodes = await deps.submitStructure(systemPrompt, userPrompt, signal);

@@ -77,6 +77,7 @@ import {
   type ProductionSkillCapability,
 } from "../skills/index.js";
 import { assertSafeBookId } from "../utils/book-id.js";
+import { isApiKeyOptionalForEndpoint } from "../utils/llm-endpoint-auth.js";
 import { PlayStore } from "../play/play-store.js";
 import { isLlmStubEnabled, stubAgentStream } from "./llm-stub.js";
 import {
@@ -87,6 +88,8 @@ import {
 } from "./skill-tool.js";
 import { opaqueConversationId, runWithAgentTrajectory } from "../llm/agent-trajectory.js";
 import { guardedPiStream } from "./pi-stream.js";
+
+const LOCAL_ENDPOINT_SDK_API_KEY = "inkos-local";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -320,7 +323,7 @@ function agentCacheKey(projectRoot: string, sessionId: string): string {
 
 function buildAttachmentUserBlock(attachments: ReadonlyArray<AgentSessionAttachment> | undefined, language: string): string {
   if (!attachments?.length) return "";
-  const isEn = language === "en";
+  const isEn = language !== "zh"
   const lines = [
     isEn
       ? "\n\n## Uploaded Files (host-provided, user-authorized)"
@@ -795,7 +798,7 @@ function createAgentToolsForMode(params: CreateAgentToolsForModeParams) {
 }
 
 function createModeTools(params: CreateAgentToolsForModeParams) {
-  const lang = params.language === "en" ? "en" : "zh";
+  const lang = params.language === "en" || params.language === "vi" ? params.language : "zh";
   const subAgentTool = createSubAgentTool(params.pipeline, params.bookId, params.projectRoot, {
     actionPayload: params.actionPayload,
     language: lang,
@@ -1055,6 +1058,13 @@ async function runAgentSessionUnlocked(
   });
   const skillResolutionKey = skillResolutionCacheKey(skillResolution);
   const model = resolveModel(config.model);
+  // pi-ai rejects an empty key before dispatching, even for anonymous local endpoints.
+  const localEndpointSdkApiKey = !config.apiKey && isApiKeyOptionalForEndpoint({
+    provider: model.provider,
+    baseUrl: model.baseUrl,
+  })
+    ? LOCAL_ENDPOINT_SDK_API_KEY
+    : undefined;
   const requestedModelIdentity = agentModelIdentity(model);
   const allowSystemFileRead = config.allowSystemFileRead ?? envFlagEnabled(process.env.INKOS_AGENT_ALLOW_SYSTEM_READ, false);
   const suppressProductionTools = config.suppressProductionTools ?? false;
@@ -1210,10 +1220,9 @@ async function runAgentSessionUnlocked(
         if (isLlmStubEnabled()) return stubAgentStream(streamModel, context);
         return guardedPiStream(streamModel, context, options);
       },
-      getApiKey: (provider: string) => {
-        if (config.apiKey) return config.apiKey;
-        return getEnvApiKey(provider);
-      },
+      getApiKey: (provider: string) => config.apiKey
+        || getEnvApiKey(provider)
+        || localEndpointSdkApiKey,
     });
 
     cached = {

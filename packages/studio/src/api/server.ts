@@ -148,14 +148,14 @@ import {
 
 // -- Studio server language (read per request from the project config's `language`) --
 
-type StudioLanguage = "zh" | "en";
+type StudioLanguage = "zh" | "en" | "vi";
 
 function normalizeStudioLanguage(value: unknown): StudioLanguage {
-  return value === "en" ? "en" : "zh";
+  return value === "vi" ? "vi" : value === "en" ? "en" : "zh";
 }
 
 function pick(lang: StudioLanguage, zh: string, en: string): string {
-  return lang === "en" ? en : zh;
+  return lang === "zh" ? zh : en;
 }
 
 // -- Pipeline stage definitions per agent type --
@@ -2862,7 +2862,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         intent: "create_book",
         title: body.title,
         genre: body.genre,
-        language: body.language === "en" ? "en" : body.language === "zh" ? "zh" : undefined,
+        language: body.language === "vi" ? "vi" : body.language === "en" ? "en" : body.language === "zh" ? "zh" : undefined,
         platform: body.platform,
         chapterWordCount: body.chapterWordCount,
         targetChapters: body.targetChapters,
@@ -3003,7 +3003,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         state.loadBookConfig(id),
         buildPipelineConfig({ bookIdForSettings: id }),
       ]);
-      const language = book.language === "en" ? "en" : "zh";
+      const language = book.language === "vi" ? "vi" : book.language === "en" ? "en" : "zh";
       const requestedBrief = typeof body.brief === "string" ? body.brief.trim() : "";
       const response = await runWorkerAgent(
         pipelineConfig.client,
@@ -3011,7 +3011,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         [
           {
             role: "system",
-            content: language === "en"
+            content: language !== "zh"
               ? [
                   "You are a fiction editor generating one optional inspiration card for a chapter rewrite.",
                   "Offer a concrete alternative beat, evidence/action detail, and ending turn that fit the supplied canon.",
@@ -3028,13 +3028,13 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
           {
             role: "user",
             content: [
-              language === "en" ? `Book: ${book.title}` : `书名：${book.title}`,
-              language === "en" ? `Chapter: ${num}` : `章节：第${num}章`,
+              language !== "zh" ? `Book: ${book.title}` : `书名：${book.title}`,
+              language !== "zh" ? `Chapter: ${num}` : `章节：第${num}章`,
               requestedBrief || persistedBrief
-                ? `${language === "en" ? "Current user brief" : "当前用户提示"}:\n${requestedBrief || persistedBrief}`
+                ? `${language !== "zh" ? "Current user brief" : "当前用户提示"}:\n${requestedBrief || persistedBrief}`
                 : "",
-              plan ? `${language === "en" ? "Generated chapter plan" : "系统章节计划"}:\n${plan}` : "",
-              `${language === "en" ? "Current chapter" : "当前章节"}:\n${chapter}`,
+              plan ? `${language !== "zh" ? "Generated chapter plan" : "系统章节计划"}:\n${plan}` : "",
+              `${language !== "zh" ? "Current chapter" : "当前章节"}:\n${chapter}`,
             ].filter(Boolean).join("\n\n"),
           },
         ],
@@ -3915,14 +3915,18 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         id: `custom:${s.name ?? "Custom"}`,
         baseUrl: s.baseUrl ?? "",
         label: s.name ?? "Custom",
+        apiKey: secrets.services[`custom:${s.name ?? "Custom"}`]?.apiKey ?? "",
       }))
-      .filter((s) => s.baseUrl && Boolean(secrets.services[s.id]?.apiKey));
+      .filter((s) => s.baseUrl && (
+        s.apiKey ||
+        isApiKeyOptionalForEndpoint({ provider: "openai", baseUrl: s.baseUrl })
+      ));
 
     const groups = await Promise.all(customs.map(async (s) => ({
       service: s.id,
       label: s.label,
       models: filterTextChatModels(
-        await probeModelsFromUpstream(s.baseUrl, secrets.services[s.id].apiKey, 10_000),
+        await probeModelsFromUpstream(s.baseUrl, s.apiKey, 10_000),
       ),
     })));
 
@@ -4136,7 +4140,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       if (updates.stream !== undefined) {
         existing.llm.stream = updates.stream;
       }
-      if (updates.language === "zh" || updates.language === "en") {
+      if (updates.language === "zh" || updates.language === "en" || updates.language === "vi") {
         existing.language = updates.language;
       }
       const { writeFile: writeFileFs } = await import("node:fs/promises");
@@ -4683,8 +4687,14 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
           throw new ApiError(404, "BOOK_NOT_FOUND", `Book not found: ${agentBookId}`);
         }
       }
-      const configLanguage = config.language === "en" ? "en" : "zh";
-      const bookLanguage = activeBookConfig?.language === "en" ? "en" : activeBookConfig?.language === "zh" ? "zh" : undefined;
+      const configLanguage = config.language === "vi" ? "vi" : config.language === "en" ? "en" : "zh";
+      const bookLanguage = activeBookConfig?.language === "vi"
+        ? "vi"
+        : activeBookConfig?.language === "en"
+          ? "en"
+          : activeBookConfig?.language === "zh"
+            ? "zh"
+            : undefined;
       const requestedLanguage = actionPayload?.shortRun?.language ?? actionPayload?.createBook?.language;
       const surfaceLanguage = agentBookId
         ? (bookLanguage ?? configLanguage)
@@ -5302,7 +5312,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
   // --- Language setup ---
 
   app.post("/api/v1/project/language", async (c) => {
-    const { language } = await c.req.json<{ language: "zh" | "en" }>();
+    const { language } = await c.req.json<{ language: "zh" | "en" | "vi" }>();
     const configPath = join(root, "inkos.json");
     try {
       const raw = await readFile(configPath, "utf-8");
@@ -5730,7 +5740,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
         ...(updates.chapterWordCount !== undefined ? { chapterWordCount: Number(updates.chapterWordCount) } : {}),
         ...(updates.targetChapters !== undefined ? { targetChapters: Number(updates.targetChapters) } : {}),
         ...(updates.status !== undefined ? { status: updates.status as typeof book.status } : {}),
-        ...(updates.language !== undefined ? { language: updates.language as "zh" | "en" } : {}),
+        ...(updates.language !== undefined ? { language: updates.language as "zh" | "en" | "vi" } : {}),
         updatedAt: new Date().toISOString(),
       };
       await state.saveBookConfig(id, updated);
@@ -6066,7 +6076,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       targetChapters: body.targetChapters ?? 100,
       chapterWordCount: body.chapterWordCount ?? 3000,
       fanficMode: (body.mode ?? "canon") as "canon",
-      ...(body.language ? { language: body.language as "zh" | "en" } : {}),
+      ...(body.language ? { language: body.language as "zh" | "en" | "vi" } : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -6133,7 +6143,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
     } catch {
       return c.json({ error: `Parent book "${body.parentBookId}" not found` }, 404);
     }
-    const language = (body.language ?? parent.language) as "zh" | "en" | undefined;
+    const language = (body.language ?? parent.language) as "zh" | "en" | "vi" | undefined;
     const now = new Date().toISOString();
     const bookConfig = buildStudioBookConfig({
       title: body.title,
@@ -6188,7 +6198,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string, o
       platform: body.platform,
       targetChapters: body.targetChapters,
       chapterWordCount: body.chapterWordCount,
-      ...(body.language ? { language: body.language as "zh" | "en" } : {}),
+      ...(body.language ? { language: body.language as "zh" | "en" | "vi" } : {}),
     }, now);
     const bookId = bookConfig.id;
     if (!bookId) {

@@ -142,13 +142,11 @@ export function computeHookDiagnostics(params: {
  */
 export function renderHookDiagnosticMarker(
   diagnostics: HookDiagnostics,
-  language: "zh" | "en",
+  language: "zh" | "en" | "vi",
 ): string {
   const tokens: string[] = [];
   if (diagnostics.stale) {
-    tokens.push(language === "en"
-      ? `stale (d=${diagnostics.distance}/half=${diagnostics.halfLife})`
-      : `过期 (距=${diagnostics.distance}/半衰=${diagnostics.halfLife})`);
+    tokens.push(language === "zh" ? `过期 (距=${diagnostics.distance}/半衰=${diagnostics.halfLife})` : `stale (d=${diagnostics.distance}/half=${diagnostics.halfLife})`);
   }
   if (diagnostics.blocked) {
     const missing = diagnostics.missingUpstream.join(", ");
@@ -156,13 +154,9 @@ export function renderHookDiagnosticMarker(
     // threshold without guessing. Token format is load-bearing — it's read by
     // the reviewer prompt verbatim.
     const distanceToken = diagnostics.blockedDistance > 0
-      ? (language === "en"
-        ? ` (blocked ${diagnostics.blockedDistance} chapters)`
-        : ` (已阻 ${diagnostics.blockedDistance} 章)`)
+      ? (language === "zh" ? ` (已阻 ${diagnostics.blockedDistance} 章)` : ` (blocked ${diagnostics.blockedDistance} chapters)`)
       : "";
-    tokens.push(language === "en"
-      ? `blocked on ${missing}${distanceToken}`
-      : `受阻于 ${missing}${distanceToken}`);
+    tokens.push(language === "zh" ? `受阻于 ${missing}${distanceToken}` : `blocked on ${missing}${distanceToken}`);
   }
   return tokens.join("; ");
 }
